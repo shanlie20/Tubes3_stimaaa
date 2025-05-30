@@ -6,11 +6,9 @@ from ui.summary_page import SummaryPage
 
 
 class MainWindow(QMainWindow):
-    """Main application window with a stacked layout for page navigation."""
-
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("ATS - CV Search & Summary")
+        self.setWindowTitle("ATS - CV Search & Summary by stimaaa")
         self.resize(1000, 700)
 
         # Central container with stacked pages
