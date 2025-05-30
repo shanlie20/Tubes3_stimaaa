@@ -2,6 +2,6 @@
 
 
 ## Dependency
-``bash
+```
 pip install pdfplumber
-``
+```
