@@ -73,13 +73,16 @@ class SearchPage(QWidget):
         # Radio buttons for algorithm
         self.alg_group = QButtonGroup(self)
         rb_kmp = QRadioButton("KMP")
-        rb_bm = QRadioButton("Boyer‑Moore")
+        rb_bm = QRadioButton("Boyer-Moore")
+        rb_ac = QRadioButton("Aho-Corasick")
         rb_kmp.setChecked(True)
         self.alg_group.addButton(rb_kmp)
         self.alg_group.addButton(rb_bm)
+        self.alg_group.addButton(rb_ac)
 
         line.addWidget(rb_kmp)
         line.addWidget(rb_bm)
+        line.addWidget(rb_ac)
 
         # Top‑N spinbox
         line.addStretch(1)

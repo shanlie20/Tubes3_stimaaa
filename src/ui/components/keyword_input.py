@@ -3,7 +3,7 @@ from PySide6.QtCore import Qt
 
 
 class KeywordInput(QWidget):
-    """Simple widget wrapping QLineEdit for entering comma‑separated keywords."""
+    """Simple widget wrapping QLineEdit for entering comma-separated keywords."""
 
     def __init__(self, placeholder: str = "") -> None:
         super().__init__()
@@ -24,6 +24,6 @@ class KeywordInput(QWidget):
     # Public helpers
     # ------------------------------------------------------------------
     def keywords(self) -> list[str]:
-        """Return a list of trimmed, non‑empty keywords entered by the user."""
+        """Return a list of trimmed, non-empty keywords entered by the user."""
         text = self.line_edit.text()
         return [kw.strip() for kw in text.split(",") if kw.strip()]

@@ -10,7 +10,7 @@ class MainWindow(QMainWindow):
 
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("ATS – CV Search & Summary")
+        self.setWindowTitle("ATS - CV Search & Summary")
         self.resize(1000, 700)
 
         # Central container with stacked pages
