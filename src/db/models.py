@@ -5,7 +5,7 @@ Base = declarative_base()
 
 class ApplicantProfile(Base):
     __tablename__ = "ApplicantProfile"
-    applicant_id = Column(Integer, primary_key=True, nullable=False, autoincrement=False)
+    applicant_id = Column(Integer, primary_key=True, nullable=False, autoincrement=True)
     first_name = Column(String(50), nullable=True)
     last_name = Column(String(50), nullable=True)
     date_of_birth = Column(Date, nullable=True)
@@ -22,9 +22,10 @@ class ApplicantProfile(Base):
 
 class ApplicationDetail(Base):
     __tablename__ = "ApplicationDetail"
-    detail_id = Column(Integer, primary_key=True, nullable=False, autoincrement=False)
+    detail_id = Column(Integer, primary_key=True, nullable=False, autoincrement=True)
     applicant_id = Column(Integer, ForeignKey("ApplicantProfile.applicant_id", ondelete="CASCADE"), nullable=False)
     application_role = Column(String(100), nullable=True)
+    cv_path = Column(String(512), nullable=False)
     applicant = relationship("ApplicantProfile", back_populates="applications")
     def __repr__(self):
         return f"<ApplicationDetail(detail_id={self.detail_id}, applicant_id={self.applicant_id}, role='{self.application_role}')>"
