@@ -36,13 +36,11 @@ def parse_pdf_to_text(pdf_path: str) -> str | None:
 
 # TESTING (dicomment)
 # if __name__ == "__main__":
-#     # pdf_file = "cv1.pdf"
-#     # if not os.path.exists(pdf_file):
-#     #     print(f"File '{pdf_file}' not found for testing.")
-#     # else:
-#     #     hasil_string = parse_pdf_to_text(pdf_file)
-#     #     if hasil_string:
-#     #         print("\n--- Hasil Ekstraksi dan Gabungan Teks ---")
-#     #         print(hasil_string[:500] + "..." if len(hasil_string) > 500 else hasil_string)
-#     #     else:
-#     #         print(f"Gagal memproses teks dari '{pdf_file}'.")
+#     # Ganti dengan path PDF yang valid untuk testing
+#     pdf_path = "cv1.pdf"
+#     text = parse_pdf_to_text(pdf_path)
+#     if text:
+#         print("Extracted and normalized text:")
+#         print(text)
+#     else:
+#         print("Failed to extract text from the PDF.")
