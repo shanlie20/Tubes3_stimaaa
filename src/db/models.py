@@ -1,28 +1,30 @@
-from sqlalchemy import Column, Integer, String, Text, ForeignKey, TIMESTAMP, func
+from sqlalchemy import Column, Integer, String, Date, ForeignKey, Text 
 from sqlalchemy.orm import relationship, declarative_base
 
 Base = declarative_base()
 
 class ApplicantProfile(Base):
     __tablename__ = "ApplicantProfile"
-    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
-    nama = Column(String(255), nullable=False)
-    email = Column(String(255), unique=True, index=True, nullable=True)
-    telepon = Column(String(50), nullable=True)
-    alamat = Column(Text, nullable=True)
-    tanggal_dibuat = Column(TIMESTAMP, server_default=func.now())
-    tanggal_diperbarui = Column(TIMESTAMP, server_default=func.now(), onupdate=func.now())
+    applicant_id = Column(Integer, primary_key=True, nullable=False, autoincrement=False)
+    first_name = Column(String(50), nullable=True)
+    last_name = Column(String(50), nullable=True)
+    date_of_birth = Column(Date, nullable=True)
+    address = Column(String(255), nullable=True) 
+    phone_number = Column(String(20), nullable=True)
     applications = relationship("ApplicationDetail", back_populates="applicant", cascade="all, delete-orphan")
     def __repr__(self):
-        return f"<ApplicantProfile(id={self.id}, nama='{self.nama}')>"
+        full_name = []
+        if self.first_name:
+            full_name.append(self.first_name)
+        if self.last_name:
+            full_name.append(self.last_name)
+        return f"<ApplicantProfile(applicant_id={self.applicant_id}, name='{' '.join(full_name)}')>"
 
 class ApplicationDetail(Base):
     __tablename__ = "ApplicationDetail"
-    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
-    applicant_id = Column(Integer, ForeignKey("ApplicantProfile.id", ondelete="CASCADE"), nullable=False)
-    cv_path = Column(String(512), nullable=False)
-    posisi_dilamar = Column(String(255), nullable=True)
-    tanggal_unggah_cv = Column(TIMESTAMP, server_default=func.now())
+    detail_id = Column(Integer, primary_key=True, nullable=False, autoincrement=False)
+    applicant_id = Column(Integer, ForeignKey("ApplicantProfile.applicant_id", ondelete="CASCADE"), nullable=False)
+    application_role = Column(String(100), nullable=True)
     applicant = relationship("ApplicantProfile", back_populates="applications")
     def __repr__(self):
-        return f"<ApplicationDetail(id={self.id}, cv_path='{self.cv_path}')>"
+        return f"<ApplicationDetail(detail_id={self.detail_id}, applicant_id={self.applicant_id}, role='{self.application_role}')>"
