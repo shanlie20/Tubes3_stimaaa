@@ -35,14 +35,14 @@ def parse_pdf_to_text(pdf_path: str) -> str | None:
     return processed_text
 
 # TESTING (dicomment)
-# if __name__ == "__main__":
-#     # pdf_file = "cv1.pdf"
-#     # if not os.path.exists(pdf_file):
-#     #     print(f"File '{pdf_file}' not found for testing.")
-#     # else:
-#     #     hasil_string = parse_pdf_to_text(pdf_file)
-#     #     if hasil_string:
-#     #         print("\n--- Hasil Ekstraksi dan Gabungan Teks ---")
-#     #         print(hasil_string[:500] + "..." if len(hasil_string) > 500 else hasil_string)
-#     #     else:
-#     #         print(f"Gagal memproses teks dari '{pdf_file}'.")
+if __name__ == "__main__":
+    pdf_file = "cv1.pdf"
+    if not os.path.exists(pdf_file):
+        print(f"File '{pdf_file}' not found for testing.")
+    else:
+        hasil_string = parse_pdf_to_text(pdf_file)
+        if hasil_string:
+            print("\n--- Hasil Ekstraksi dan Gabungan Teks ---")
+            print(hasil_string[:500] + "..." if len(hasil_string) > 500 else hasil_string)
+        else:
+            print(f"Gagal memproses teks dari '{pdf_file}'.")
