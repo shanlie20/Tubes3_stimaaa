@@ -19,4 +19,4 @@ untuk jalanin databasenya
 - di ganti password di .env
 - di terminal run ini
 python src/db/seeder.py
-supaya kebaca semua isi file pdf dari cv yang mau dipake dengan kategori kategori masing masing
+(ga perlu buat database ats_db dulu)
