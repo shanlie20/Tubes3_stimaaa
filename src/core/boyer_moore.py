@@ -1,6 +1,6 @@
 from typing import List, Tuple
 
-def boyer_moore_search(text: str, pattern: str) -> Tuple[List[int], bool]:
+def boyer_moore_search(text: str, pattern: str) -> int:
     """
     Mencari semua kemunculan 'pattern' dalam 'text' menggunakan algoritma Boyer-Moore sederhana
     dengan fokus pada Bad Character Rule dan 3 case utama.
@@ -60,8 +60,7 @@ def boyer_moore_search(text: str, pattern: str) -> Tuple[List[int], bool]:
                 s += j + 1  # geser pola melewati karakter mismatch
 
     count_occurences = len(occurrences)
-    found = count_occurences > 0
-    return count_occurences, found
+    return count_occurences
 
 
 # Contoh penggunaan:

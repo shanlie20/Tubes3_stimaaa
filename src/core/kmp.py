@@ -1,6 +1,6 @@
 from typing import List
 
-def compute_lps_array(pattern: str) -> List[int]:
+def compute_lps_array(pattern: str) -> int:
     """
     Menghitung Longest Proper Prefix which is also Suffix (LPS) array
     untuk algoritma KMP.
@@ -73,7 +73,9 @@ def kmp_search(text: str, pattern: str) -> List[int]:
             else:
                 i += 1
 
-    return occurrences
+    occurrences
+    count_occurrences = len(occurrences)
+    return count_occurrences
 
 # Contoh penggunaan:
 # from src.core.kmp import kmp_search
