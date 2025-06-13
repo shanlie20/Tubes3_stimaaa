@@ -4,6 +4,7 @@
 ## Dependency
 ```
 pip install pdfplumber
+python -m src.main
 ```
 
 ## How to run
