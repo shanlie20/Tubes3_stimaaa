@@ -17,17 +17,17 @@ from PySide6.QtWidgets import (
     QSizePolicy # Added for size policies
 )
 
-from ui.components.keyword_input import KeywordInput
-from ui.components.result_card import ResultCard
+from .components.keyword_input import KeywordInput
+from .components.result_card import ResultCard
 
 # Import the actual core search logic and utilities
-from core.kmp import kmp_search
+from src.core.kmp import kmp_search
 # from core.boyer_moore import boyer_moore_search # Akan diimplementasikan nanti
 # from core.aho_corasick import aho_corasick_search # Akan diimplementasikan nanti
-from core.pdf_parser import parse_pdf_to_text # Asumsi fungsi ini ada untuk membaca CV
-from utils.timer import start_timer, stop_timer
-from utils.keyword_utils import normalize_text, tokenize_text, remove_stopwords, extract_unique_keywords
-from utils.file_utils import read_file_content # Jika CV disimpan sebagai teks biasa
+from src.core.pdf_parser import parse_pdf_to_text # Asumsi fungsi ini ada untuk membaca CV
+from src.utils.timer import start_timer, stop_timer
+from src.utils.keyword_utils import normalize_text, tokenize_text, remove_stopwords, extract_unique_keywords
+from src.utils.file_utils import read_file_content # Jika CV disimpan sebagai teks biasa
 
 def perform_search(keywords: list[str], algorithm: str, top_n: int) -> tuple[list[dict], int, dict]:
     """

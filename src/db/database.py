@@ -3,7 +3,7 @@ from sqlalchemy.orm import sessionmaker, Session
 from contextlib import contextmanager
 import os
 from dotenv import load_dotenv
-from models import Base 
+from .models import Base 
 
 load_dotenv() 
 DB_USER = os.getenv("DB_USER", "root")

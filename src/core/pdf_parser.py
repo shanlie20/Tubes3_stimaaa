@@ -1,6 +1,6 @@
 import pdfplumber
 import os
-
+from src.db.database import get_db_session
 def extract_text_from_pdf_raw(pdf_path: str) -> str | None:
     if not os.path.exists(pdf_path):
         return None

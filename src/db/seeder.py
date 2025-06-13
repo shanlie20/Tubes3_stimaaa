@@ -2,8 +2,8 @@ import os
 from datetime import date, timedelta
 from faker import Faker
 
-from database import get_db_session, ensure_database_exists_and_recreate_if_needed, create_tables_in_db
-from models import ApplicantProfile, ApplicationDetail
+from .database import get_db_session, ensure_database_exists_and_recreate_if_needed, create_tables_in_db
+from .models import ApplicantProfile, ApplicationDetail
 
 fake = Faker('id_ID')
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
