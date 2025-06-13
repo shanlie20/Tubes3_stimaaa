@@ -30,3 +30,11 @@ select * from applicationdetail;
 select * from applicantprofile;
 - pilih salah satu line dengan cara diblok lalu CTRL + E (2x)
 - Jadi tampilan tabel di database ats_db
+
+Isi template .env
+# .env
+DB_USER=root #biasanya (sesuaikan dengan user database Anda)
+DB_PASSWORD=your_password #ganti dengan password database Anda
+DB_HOST=localhost #biasanya (sesuaikan dengan host database Anda)
+DB_PORT=3306 #default (sesuaikan dengan port database Anda)
+DB_NAME=ats_db #jangan diubah, ini adalah nama database yang akan digunakan oleh aplikasi
