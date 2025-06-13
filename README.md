@@ -20,3 +20,8 @@ untuk jalanin databasenya
 - di terminal run ini
 python src/db/seeder.py
 (ga perlu buat database ats_db dulu)
+
+Jalanin untuk liat tabel dari databasenya
+- setelah download ekstensi di atas
+- lalu masuk ke ekstensi SQLTools itu
+- Add New Connection > MySQL > [Connection namenya bebas] > [Port sesuaikan dengan port yang dipakai di MySQL] > di Database masukkin 'ats_db'> Username : 'root' > Pilih Save as plaintext in settings di bagian Password mode > isi password sesuai dengan password di MySQL
