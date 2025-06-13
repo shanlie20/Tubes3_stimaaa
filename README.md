@@ -24,4 +24,9 @@ python src/db/seeder.py
 Jalanin untuk liat tabel dari databasenya
 - setelah download ekstensi di atas
 - lalu masuk ke ekstensi SQLTools itu
-- Add New Connection > MySQL > [Connection namenya bebas] > [Port sesuaikan dengan port yang dipakai di MySQL] > di Database masukkin 'ats_db'> Username : 'root' > Pilih Save as plaintext in settings di bagian Password mode > isi password sesuai dengan password di MySQL
+- Add New Connection > MySQL > [Connection namenya bebas] > [Port sesuaikan dengan port yang dipakai di MySQL] > di Database masukkin 'ats_db'> Username : 'root' > Pilih Save as plaintext in settings di bagian Password mode > isi password sesuai dengan password di MySQL > Save Connection > Connect now
+- di file sql yang dibuat otomatis > ngisi dengan ini
+select * from applicationdetail;
+select * from applicantprofile;
+- pilih salah satu line dengan cara diblok lalu CTRL + E (2x)
+- Jadi tampilan tabel di database ats_db
