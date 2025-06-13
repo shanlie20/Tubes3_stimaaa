@@ -1,9 +1,9 @@
 import time
 from typing import List, Tuple
-from ..db import get_db_session
+from database import get_db_session
 from kmp import kmp_search
 from boyer_moore import boyer_moore_search
-from pdf_parser import parse_pdf_to_text
+from pdf_parser import parse_pdf_to_text  # Asumsi sudah ada fungsi ini untuk ekstrak PDF
 
 def normalize_text(text: str) -> str:
     """Normalisasi teks dengan mengonversi ke lowercase dan menghapus karakter non-alfabet."""
@@ -25,70 +25,66 @@ def perform_search(keywords: List[str], selected_algorithm: str, top_n: int) -> 
     timings = {"exact_ms": 0, "fuzzy_ms": 0}
     total_cv_scan = 0
 
-    # Pakai dummy dulu
-    all_cv_contents = [
-        {"applicant_id": 1, "content": "CV of Applicant 1, skills: PythonPythonPythonPythonPythonPythonPython, React,React,React,React,React,React,React,React JavaScript", "name": "Applicant 1"},
-        {"applicant_id": 2, "content": "CV of Applicant 2, skills: Java, Spring", "name": "Applicant 2"},
-        {"applicant_id": 3, "content": "CV of Applicant 3, skills: Python, JavaScript, React", "name": "Applicant 3"},
-        {"applicant_id": 4, "content": "CV of Applicant 4, skills: Python, Django, Flask", "name": "Applicant 4"},
-        {"applicant_id": 5, "content": "CV of Applicant 5, skills: React, Node.js", "name": "Applicant 5"},
-        {"applicant_id": 6, "content": "CV of Applicant 6, skills: Python, React, JavaScript", "name": "Applicant 6"},
-        {"applicant_id": 7, "content": "CV of Applicant 7, skills: Python, React, JavaScript, Django", "name": "Applicant 7"},
-        {"applicant_id": 8, "content": "CV of Applicant 8, skills: Python, React, JavaScript, Flask", "name": "Applicant 8"},
-        {"applicant_id": 9, "content": "CV of Applicant 9, skills: Python, React, JavaScript, Node.js", "name": "Applicant 9"},
-        {"applicant_id": 10, "content": "CV of Applicant 10, skills: Python, React, JavaScript, Django", "name": "Applicant 10"},
-    ]
-
-    applicant_matches = []  # Menyimpan hasil pencocokan kandidat
-    total_cv_scan = len(all_cv_contents)  # Total CV yang diproses
-
     # Mulai menghitung waktu pencarian
     search_start_time = time.time()
 
-    for applicant_data in all_cv_contents:
-        applicant_id = applicant_data["applicant_id"]
-        cv_content = applicant_data["content"]
-        cv_name = applicant_data["name"]
+    with get_db_session() as db:
+        # Ambil seluruh data aplikasi dengan CV yang ada di database
+        applicants = db.query(ApplicantProfile, ApplicationDetail).join(ApplicationDetail).all()
 
-        # Normalisasi teks CV
-        normalized_cv_content = normalize_text(cv_content)
+        applicant_matches = []  # Menyimpan hasil pencocokan kandidat
+        total_cv_scan = len(applicants)  # Total CV yang diproses
 
-        match_count = 0
-        matched_keywords = {}  # Menyimpan pasangan keyword yang cocok beserta count_occurences countnya
-        for keyword in keywords:
-            # Normalisasi kata kunci
-            normalized_keyword = normalize_text(keyword)
+        for applicant_profile, application in applicants:
+            cv_path = application.cv_path  # Lokasi path CV
+            applicant_id = applicant_profile.applicant_id
+            first_name = applicant_profile.first_name
 
-            # Algoritma pencocokan yang dipilih
-            if selected_algorithm == "KMP":
-                count_occurences = kmp_search(normalized_cv_content, normalized_keyword)
-            elif selected_algorithm == "Boyer-Moore":
-                count_occurences = boyer_moore_search(normalized_cv_content, normalized_keyword)  # Jumlah kemunculan
-            elif selected_algorithm == "Aho-Corasick":
-                count_occurences = 0  # Placeholder untuk algoritma Aho-Corasick
-            else:
-                count_occurences = [i for i in range(len(normalized_cv_content) - len(normalized_keyword) + 1)
-                               if normalized_cv_content[i:i + len(normalized_keyword)] == normalized_keyword]
+            # Baca konten CV dari file (misalnya menggunakan path file yang ada di database)
+            cv_content = ""
+            if os.path.exists(cv_path):  # Pastikan file CV ada
+                cv_content = parse_pdf_to_text(cv_path)  # Asumsi fungsi ini membaca PDF dan mengonversi ke teks
 
-            # Jika ada kecocokan, hitung jumlahnya
-            if count_occurences:
-                match_count += count_occurences  # Hasil Boyer-Moore sudah berupa jumlah kemunculan
-                matched_keywords[keyword] = count_occurences  # Menyimpan jumlah kemunculan kata kunci
+            # Normalisasi teks CV
+            normalized_cv_content = normalize_text(cv_content)
 
-        # Simpan hasil jika ada kecocokan
-        if match_count > 0:
-            applicant_matches.append({
-                "name": cv_name,
-                "matched_keywords": matched_keywords,
-                "total_matches": match_count,
-                "applicant_id": applicant_id
-            })
+            match_count = 0
+            matched_keywords = {}  # Menyimpan pasangan keyword yang cocok beserta count_occurences countnya
+            for keyword in keywords:
+                # Normalisasi kata kunci
+                normalized_keyword = normalize_text(keyword)
 
-    # Urutkan hasil berdasarkan jumlah kecocokan (tertinggi ke terendah)
-    applicant_matches.sort(key=lambda x: x["total_matches"], reverse=True)
+                # Algoritma pencocokan yang dipilih
+                if selected_algorithm == "KMP":
+                    count_occurences = kmp_search(normalized_cv_content, normalized_keyword)
+                elif selected_algorithm == "Boyer-Moore":
+                    count_occurences = boyer_moore_search(normalized_cv_content, normalized_keyword)  # Jumlah kemunculan
+                elif selected_algorithm == "Aho-Corasick":
+                    count_occurences = 0  # Placeholder untuk algoritma Aho-Corasick
+                else:
+                    count_occurences = [i for i in range(len(normalized_cv_content) - len(normalized_keyword) + 1)
+                                   if normalized_cv_content[i:i + len(normalized_keyword)] == normalized_keyword]
 
-    # Ambil top_n hasil
-    results = applicant_matches[:top_n]
+                # Jika ada kecocokan, hitung jumlahnya
+                if count_occurences:
+                    match_count += count_occurences  # Hasil Boyer-Moore sudah berupa jumlah kemunculan
+                    matched_keywords[keyword] = count_occurences  # Menyimpan jumlah kemunculan kata kunci
+
+            # Simpan hasil jika ada kecocokan
+            if match_count > 0:
+                applicant_matches.append({
+                    "name": first_name,
+                    "matched_keywords": matched_keywords,
+                    "total_matches": match_count,
+                    "applicant_id": applicant_id,
+                    "cv_path": cv_path
+                })
+
+        # Urutkan hasil berdasarkan jumlah kecocokan (tertinggi ke terendah)
+        applicant_matches.sort(key=lambda x: x["total_matches"], reverse=True)
+
+        # Ambil top_n hasil
+        results = applicant_matches[:top_n]
 
     # Hitung waktu pencarian
     total_search_time = stop_timer(search_start_time, f"Total {selected_algorithm} Search")
