@@ -35,12 +35,12 @@ def parse_pdf_to_text(pdf_path: str) -> str | None:
     return processed_text
 
 # TESTING (dicomment)
-# if __name__ == "__main__":
-#     # Ganti dengan path PDF yang valid untuk testing
-#     pdf_path = "cv1.pdf"
-#     text = parse_pdf_to_text(pdf_path)
-#     if text:
-#         print("Extracted and normalized text:")
-#         print(text)
-#     else:
-#         print("Failed to extract text from the PDF.")
+if __name__ == "__main__":
+    # Ganti dengan path PDF yang valid untuk testing
+    pdf_path = "cv1.pdf"
+    text = parse_pdf_to_text(pdf_path)
+    if text:
+        print("Extracted and normalized text:")
+        print(text)
+    else:
+        print("Failed to extract text from the PDF.")
