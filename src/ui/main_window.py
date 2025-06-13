@@ -1,8 +1,9 @@
+
 from PySide6.QtWidgets import QMainWindow, QWidget, QStackedLayout
 from PySide6.QtCore import Qt
 
-from ui.search_page import SearchPage
-from ui.summary_page import SummaryPage
+from .search_page import SearchPage
+from .summary_page import SummaryPage
 
 
 class MainWindow(QMainWindow):
