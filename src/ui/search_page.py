@@ -217,9 +217,6 @@ class SearchPage(QWidget):
         self.results_scroll_area.setWidgetResizable(True)
         self.results_container = QWidget()
         self.results_grid_layout = QGridLayout(self.results_container) # Use QGridLayout
-        # Align to top-left is usually default for grid layout, but if you put items,
-        # it will follow the items. Centering empty state is different.
-        # self.results_grid_layout.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignLeft) 
         self.results_grid_layout.setSpacing(10) # Spacing between cards
         self.results_scroll_area.setWidget(self.results_container)
         root.addWidget(self.results_scroll_area, 1) # Give it stretch factor
@@ -247,34 +244,36 @@ class SearchPage(QWidget):
     def _show_initial_message(self):
         """Displays a message in the results area when no search has been performed."""
         # Clear any existing widgets AND spacers
+        self._clear_grid_layout()
+        
+        message_label = QLabel("Please input keywords, top matches, and select an algorithm to perform a search.")
+        message_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        message_label.setStyleSheet("color: #888; font-style: italic; font-size: 16px;")
+        message_label.setWordWrap(True)
+        
+        # Create a single-cell layout that spans the entire grid
+        # This ensures the message is truly centered
+        self.results_grid_layout.addWidget(message_label, 0, 0, 1, 1, Qt.AlignmentFlag.AlignCenter)
+        
+        # Set the grid to have flexible sizing
+        self.results_grid_layout.setRowStretch(0, 1)
+        self.results_grid_layout.setColumnStretch(0, 1)
+
+    def _clear_grid_layout(self):
+        """Helper method to completely clear the grid layout"""
         while self.results_grid_layout.count():
             item = self.results_grid_layout.takeAt(0)
             widget = item.widget()
             if widget is not None:
                 widget.deleteLater()
-            elif item.spacerItem(): # Explicitly remove QSpacerItem
+            elif item.spacerItem():
                 self.results_grid_layout.removeItem(item)
         
-        message_label = QLabel("Please input keywords, top matches, and select an algorithm to perform a search.")
-        message_label.setAlignment(Qt.AlignmentFlag.AlignCenter.AlignHCenter) # Center horizontally
-        message_label.setStyleSheet("color: #888; font-style: italic; font-size: 16px;") # Set font size
-        message_label.setWordWrap(True) # Ensure text wraps
-        
-        # Add vertical expanding spacers above and below the message label
-        self.results_grid_layout.addItem(QSpacerItem(1, 1, QSizePolicy.Minimum, QSizePolicy.Expanding), 0, 0, 1, 3) # Row 0, spanning 3 cols
-        
-        # Add the message label in the middle row, spanning all columns
-        # Align center will center it within its cell, and the stretches will pull it to the overall center
-        self.results_grid_layout.addWidget(message_label, 1, 0, 1, 3, Qt.AlignmentFlag.AlignCenter) 
-        
-        # Add another vertical expanding spacer below the message label
-        self.results_grid_layout.addItem(QSpacerItem(1, 1, QSizePolicy.Minimum, QSizePolicy.Expanding), 2, 0, 1, 3) # Row 2, spanning 3 cols
-
-        # Set column stretches to ensure horizontal centering
-        self.results_grid_layout.setColumnStretch(0, 1)
-        self.results_grid_layout.setColumnStretch(1, 1)
-        self.results_grid_layout.setColumnStretch(2, 1)
-
+        # Reset all stretches
+        for i in range(self.results_grid_layout.rowCount()):
+            self.results_grid_layout.setRowStretch(i, 0)
+        for i in range(self.results_grid_layout.columnCount()):
+            self.results_grid_layout.setColumnStretch(i, 0)
 
     # ------------------------------------------------------------------
     # Event handlers
@@ -313,20 +312,7 @@ class SearchPage(QWidget):
 
     def _populate_current_page_results(self):
         # Clear old cards and any spacers
-        while self.results_grid_layout.count():
-            item = self.results_grid_layout.takeAt(0)
-            widget = item.widget()
-            if widget is not None:
-                widget.deleteLater()
-            elif item.spacerItem(): # Important: remove QSpacerItem as well
-                self.results_grid_layout.removeItem(item)
-        
-        # Reset column and row stretches to ensure consistent layout for cards
-        # This is crucial after displaying the initial message or "no results" message
-        for i in range(self.results_grid_layout.columnCount()):
-            self.results_grid_layout.setColumnStretch(i, 0)
-        for i in range(self.results_grid_layout.rowCount()):
-            self.results_grid_layout.setRowStretch(i, 0)
+        self._clear_grid_layout()
 
         start_index = self.current_page * self.results_per_page
         end_index = start_index + self.results_per_page
@@ -335,20 +321,19 @@ class SearchPage(QWidget):
         if not current_page_results:
             # If no results, display a specific message
             no_results_label = QLabel("No results found for the given keywords. Try different keywords.")
-            no_results_label.setAlignment(Qt.AlignmentFlag.AlignCenter.AlignHCenter) # Center horizontally
-            no_results_label.setStyleSheet("color: #888; font-style: italic; font-size: 16px;") # Consistent font size
+            no_results_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            no_results_label.setStyleSheet("color: #888; font-style: italic; font-size: 16px;")
             no_results_label.setWordWrap(True)
 
-            self.results_grid_layout.addItem(QSpacerItem(1, 1, QSizePolicy.Minimum, QSizePolicy.Expanding), 0, 0, 1, 3)
-            self.results_grid_layout.addWidget(no_results_label, 1, 3, 1, 3, Qt.AlignmentFlag.AlignCenter)
-            self.results_grid_layout.addItem(QSpacerItem(1, 1, QSizePolicy.Minimum, QSizePolicy.Expanding), 2, 0, 1, 3)
-
-            # Ensure column stretches are set for centering
+            # Add the label to span the entire grid for proper centering
+            self.results_grid_layout.addWidget(no_results_label, 0, 0, 1, 1, Qt.AlignmentFlag.AlignCenter)
+            
+            # Set stretch to make it truly centered
+            self.results_grid_layout.setRowStretch(0, 1)
             self.results_grid_layout.setColumnStretch(0, 1)
-            self.results_grid_layout.setColumnStretch(1, 1)
-            self.results_grid_layout.setColumnStretch(2, 1)
             return
 
+        # Add cards in a 3-column grid
         row, col = 0, 0
         for res in current_page_results:
             card = ResultCard(res)
@@ -360,24 +345,10 @@ class SearchPage(QWidget):
             if col >= 3: # 3 columns per row
                 col = 0
                 row += 1
-        
-        # Add stretches to ensure cards align to top-left and prevent remaining space from being empty
-        # This will fill any empty cells in the grid with stretch space, preventing expansion
-        # It's important to clear existing stretches before setting new ones for a consistent layout
-        # (This was already done at the beginning of the function, but reinforcing the logic)
-        
-        # Add vertical stretch below the last row of cards
-        if row < 3: # Assuming max 3 rows for cards
-            for r_stretch in range(row, 3):
-                self.results_grid_layout.setRowStretch(r_stretch, 1)
-        
-        # Add horizontal stretch to the right of the last card(s)
-        if current_page_results and col > 0: # If there are results and the last row is partial
-            for c_stretch in range(col, 3): # Stretch remaining columns in the partial row
-                self.results_grid_layout.setColumnStretch(c_stretch, 1)
-        elif not current_page_results: # This case is handled by the "No results found" logic above
-             pass # No need to set stretches here, as the no_results_label already does it
 
+        # Set column stretches to ensure cards are evenly distributed
+        for i in range(3):
+            self.results_grid_layout.setColumnStretch(i, 1)
 
     def _update_pagination_buttons(self):
         total_pages = (len(self.all_results) + self.results_per_page - 1) // self.results_per_page
@@ -391,7 +362,6 @@ class SearchPage(QWidget):
         if self.current_page > 0:
             self.current_page -= 1
             self._populate_current_page_results()
-            self._update_pagination_buttons()
 
     def _next_page(self):
         total_pages = (len(self.all_results) + self.results_per_page - 1) // self.results_per_page
