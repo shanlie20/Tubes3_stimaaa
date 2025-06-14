@@ -64,9 +64,9 @@ def boyer_moore_search(text: str, pattern: str) -> int:
 
 
 # Contoh penggunaan:
-if __name__ == "__main__":
-    text_example = "BABABBABBBABABBABBBB"
-    pattern_example = "BABB"
-    count_occurences, is_found = boyer_moore_search(text_example, pattern_example)
-    print(f"Occurences: {count_occurences}")
-    print(f"Found? {is_found}")
+# if __name__ == "__main__":
+#     text_example = "BABABBABBBABABBABBBB"
+#     pattern_example = "BABB"
+#     count_occurences, is_found = boyer_moore_search(text_example, pattern_example)
+#     print(f"Occurences: {count_occurences}")
+#     print(f"Found? {is_found}")

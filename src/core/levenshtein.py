@@ -1,13 +1,10 @@
+from typing import List
+
 def levenshtein_distance(s1: str, s2: str) -> int:
-    """
-    Menghitung jarak Levenshtein antara dua string s1 dan s2.
-    Jarak maksudnya adalah jumlah operasi edit minimum
-    (insert, delete, replace) untuk mengubah s1 menjadi s2.
-    """
+    """Menghitung jarak Levenshtein antara dua string s1 dan s2."""
     if len(s1) < len(s2):
         return levenshtein_distance(s2, s1)
 
-    # s1 lebih panjang atau sama panjang dengan s2
     previous_row = list(range(len(s2) + 1))
     for i, c1 in enumerate(s1, start=1):
         current_row = [i]
@@ -21,33 +18,32 @@ def levenshtein_distance(s1: str, s2: str) -> int:
     return previous_row[-1]
 
 def levenshtein_ratio(s1: str, s2: str) -> float:
-    """
-    Menghitung rasio kemiripan dua string berdasarkan jarak Levenshtein,
-    dengan nilai 1.0 berarti identik, dan 0 berarti sangat berbeda.
-    """
+    """Menghitung rasio kemiripan dua string berdasarkan jarak Levenshtein."""
     distance = levenshtein_distance(s1, s2)
     max_len = max(len(s1), len(s2))
     if max_len == 0:
         return 1.0  # kedua string kosong
     return 1.0 - (distance / max_len)
 
-def fuzzy_search(text: str, keyword: str, threshold: float = 0.8) -> bool:
-    """
-    Mencari apakah terdapat kata dalam 'text' yang mirip dengan 'keyword' 
-    berdasarkan threshold kemiripan Levenshtein Ratio.
-    Return True jika ada kata mirip, False jika tidak.
-
-    Args:
-        text (str): Teks untuk dicari
-        keyword (str): Kata kunci yang akan dicari kemiripannya
-        threshold (float): nilai ambang batas rasio kemiripan (0.0-1.0)
-
-    Returns:
-        bool: True jika ditemukan kemiripan di atas threshold, False jika tidak
-    """
+def fuzzy_search(text: str, keyword: str, threshold: float) -> int:
+    """Mencari dan menghitung jumlah kemunculan kata dalam text yang mirip dengan keyword berdasarkan Levenshtein Distance."""
     words = text.split()
+    count = 0
     for word in words:
         ratio = levenshtein_ratio(word, keyword)
         if ratio >= threshold:
-            return True
-    return False
+            count += 1
+    return count
+
+
+# Contoh penggunaan:
+if __name__ == "__main__":
+    text_example = "hello world, this is a test of the fuzzy matching algorithm"
+    keyword_example = "helo"  # Kata yang salah ketik
+    threshold = 0.8  # Ambang batas kemiripan
+    
+    results = fuzzy_search(text_example, keyword_example, threshold)
+    
+    # Menampilkan hasil pencarian
+    print(f"Keyword: {keyword_example}")
+    print(f"Fuzzy Matches Count: {results}")
