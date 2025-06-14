@@ -11,7 +11,8 @@ from PySide6.QtGui import QDesktopServices
 class ResultCard(QFrame):
     """Card widget showing basic information about a CV match."""
 
-    summary_clicked = Signal(dict) # Emits the full data dict for summary
+    # MODIFIED: Change signal to emit only int (applicant_id)
+    summary_clicked = Signal(int) # Emits the applicant_id for summary
     view_cv_clicked = Signal(str) # Emits the cv_path string for viewing CV
 
     def __init__(self, data: dict):
@@ -45,14 +46,14 @@ class ResultCard(QFrame):
         # Keyword list with numbering and occurrences
         keywords_list_layout = QVBoxLayout()
         matched_keywords_detail = self._data.get("matched_keywords_detail", {})
-        
+
         # Sort keywords for consistent numbering, though not strictly required by request
         sorted_keywords = sorted(matched_keywords_detail.items(), key=lambda item: item[0])
 
         for i, (keyword, occurrence) in enumerate(sorted_keywords):
             keyword_lbl = QLabel(f"{i+1}. {keyword}: {occurrence} occurence{'s' if occurrence > 1 else ''}")
             keywords_list_layout.addWidget(keyword_lbl)
-        
+
         main_v_layout.addLayout(keywords_list_layout)
 
         main_v_layout.addStretch(1) # Pushes buttons to the bottom
@@ -60,8 +61,8 @@ class ResultCard(QFrame):
         # Bottom section: Buttons (Summary left, View CV right)
         bottom_h_layout = QHBoxLayout()
         summary_btn = QPushButton("Summary")
-        # Pass the entire data dict for summary, as it might need other info
-        summary_btn.clicked.connect(lambda: self.summary_clicked.emit(self._data)) 
+        # MODIFIED: Emit only applicant_id
+        summary_btn.clicked.connect(lambda: self.summary_clicked.emit(self._data.get("applicant_id")))
         bottom_h_layout.addWidget(summary_btn)
 
         bottom_h_layout.addStretch(1) # Pushes View CV button to the right
@@ -87,11 +88,11 @@ class ResultCard(QFrame):
                 font-weight: bold;
             }
             QFrame#resultCard QPushButton {
-                color: black;              
-                background-color: white;   
-                border: 1px solid black;   
-                padding: 5px 10px;         
-                border-radius: 4px;        
+                color: black;
+                background-color: white;
+                border: 1px solid black;
+                padding: 5px 10px;
+                border-radius: 4px;
             }
             QFrame#resultCard QPushButton:hover {
                 background-color: #f0f0f0;  /* Latar belakang abu-abu saat kursor di atas */
@@ -102,11 +103,11 @@ class ResultCard(QFrame):
     def open_cv_pdf(self):
         """Open the CV PDF based on the cv_path."""
         cv_path = self._data.get("cv_path", "")  # Mendapatkan cv_path dari data kandidat
-        
+
         if cv_path:
             # Convert the file path to a URL
             cv_url = QUrl.fromLocalFile(cv_path)
             # Use QDesktopServices to open the URL in the default PDF viewer
             QDesktopServices.openUrl(cv_url)
         else:
-            print("CV file not found!")
+            print("CV file not found!")

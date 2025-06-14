@@ -1,37 +1,25 @@
-# search.py
-import time
 import os
-
 from src.utils.timer import start_timer, stop_timer
 from typing import List, Tuple
 
 from src.db.database import get_db_session
-from src.db.models import ApplicantProfile, ApplicationDetail  # Importing models
+from src.db.models import ApplicantProfile, ApplicationDetail
 from src.db.seeder import PROJECT_ROOT
 
 from .kmp import kmp_search
 from .boyer_moore import boyer_moore_search
-from .aho_corasick import aho_corasick_search 
+from .aho_corasick import aho_corasick_search
 from .levenshtein import fuzzy_search
 
-from .pdf_parser import parse_pdf_to_text  # Assumed to exist for PDF extraction
+from .pdf_parser import parse_pdf_to_text
 
-from .summary import get_candidate_summary  # Importing summary function
-
-# untuk testing saja
-from itertools import islice
-
+# Hapus islice import untuk deployment
+# from itertools import islice
 
 def normalize_text(text: str) -> str:
     """Normalizes text by converting to lowercase and replacing non-alphanumeric characters with spaces."""
-    return ''.join([char.lower() if char.isalnum() else ' ' for char in text])
-
-# def stop_timer(start_time, action_description=""):
-#     """Function to calculate and return execution time in milliseconds."""
-#     end_time = time.time()
-#     elapsed_time = (end_time - start_time) * 1000  # Convert to milliseconds
-#     print(f"{action_description}: {elapsed_time:.2f} ms")
-#     return elapsed_time
+    normalized = ''.join([char.lower() if char.isalnum() else ' ' for char in text])
+    return ' '.join(normalized.split())
 
 def perform_search(keywords: List[str], selected_algorithm: str, top_n: int) -> Tuple[List[dict], int, dict]:
     """
@@ -39,114 +27,99 @@ def perform_search(keywords: List[str], selected_algorithm: str, top_n: int) -> 
     It returns three variables: search results, total scanned CVs, and execution time in a dictionary format.
     """
     results = []
-    timings = {"exact_ms": 0, "fuzzy_ms": 0}
+    timings = {"exact_ms": 0.0, "fuzzy_ms": 0.0}
     total_cv_scan = 0
 
-    # Start timing the search
-    search_start_time = time.time()
+    # Normalisasi keywords input satu kali di awal
+    normalized_keywords_input = [normalize_text(keyword) for keyword in keywords]
 
     with get_db_session() as db:
-        # Retrieve all application data with existing CVs from the database
-        applicants = db.query(ApplicantProfile, ApplicationDetail).join(ApplicationDetail).all()
+        applicants_query = db.query(ApplicantProfile, ApplicationDetail).join(ApplicationDetail)
+        all_applicants = applicants_query.all()
+        total_cv_scan = len(all_applicants)
 
-        applicant_matches = []  # Stores candidate match results
-        total_cv_scan = len(applicants)  # Total CVs processed
+        applicant_matches = []
 
-        for applicant_profile, application in islice(applicants, 4):
-        # for applicant_profile, application in applicants:
-            cv_path = application.cv_path # CV file path
+        for applicant_profile, application in all_applicants:
+            cv_path = application.cv_path
             applicant_id = applicant_profile.applicant_id
-            first_name = applicant_profile.first_name
+            full_name = f"{applicant_profile.first_name} {applicant_profile.last_name}".strip()
 
-            # print(f"cv_path: {cv_path}")  # Debugging output to see CV path
             full_cv_path = os.path.join(PROJECT_ROOT, "data", cv_path)
             cv_content = ""
             if os.path.exists(full_cv_path):
                 try:
-                    cv_content = parse_pdf_to_text(full_cv_path) 
-                    # print(f"cv_content (first 100 chars): {cv_content[:100]}...") # Debugging output
+                    cv_content = parse_pdf_to_text(full_cv_path)
                 except Exception as e:
                     print(f"Error parsing PDF {full_cv_path}: {e}")
-                    cv_content = "" # Ensure cv_content is empty on error
+                    cv_content = ""
             else:
                 print(f"File {cv_path} not found at {full_cv_path}.")
             
-            # print("iteration :", applicant_id)  # Debugging output to see iteration
-            # Normalize CV text
+            if not cv_content:
+                continue
+
             normalized_cv_content = normalize_text(cv_content)
 
-            match_count = 0
-            matched_keywords_detail = {} # Stores matched keyword pairs along with their occurrence counts
+            current_applicant_total_matches = 0
+            current_applicant_matched_keywords_detail = {}
 
-            normalized_keywords = [normalize_text(keyword) for keyword in keywords]
-            if(selected_algorithm == "Aho-Corasick"):
-                start_time = start_timer()
-                print(f"normalized_keywords: {normalized_keywords}")  # Debugging output
-                matched_keywords_detail = aho_corasick_search(normalized_keywords, normalized_cv_content)
-                match_count = sum(matched_keywords_detail.values())
-                exec_time_exact = stop_timer(start_time, f"Aho-Corasick Search for {len(normalized_keywords)} keywords")
-                print(f"match_count (Aho-Corasick): {match_count}")  # Debugging output
+            # --- Pengukuran Waktu Exact Match per CV ---
+            exact_match_timer_start = start_timer() # Start timer untuk exact match
 
-            else:
-                for keyword in keywords:
-                    # Normalize keyword
-                    normalized_keyword = normalize_text(keyword)
-
+            if selected_algorithm == "Aho-Corasick":
+                results_from_algo = aho_corasick_search(normalized_keywords_input, normalized_cv_content)
+                current_applicant_matched_keywords_detail.update(results_from_algo)
+                current_applicant_total_matches = sum(results_from_algo.values())
+            else: # KMP atau Boyer-Moore
+                for original_keyword, normalized_keyword in zip(keywords, normalized_keywords_input):
                     current_keyword_occurrences = 0
-
-                    # Selected matching algorithm
                     if selected_algorithm == "KMP":
-                        start_time = start_timer()
                         current_keyword_occurrences = kmp_search(normalized_cv_content, normalized_keyword)
-                        exec_time_exact = stop_timer(start_time, f"{selected_algorithm} Search for '{normalized_keyword}'")
-
                     elif selected_algorithm == "Boyer-Moore":
-                        start_time = start_timer()
                         current_keyword_occurrences = boyer_moore_search(normalized_cv_content, normalized_keyword)
-                        exec_time_exact = stop_timer(start_time, f"{selected_algorithm} Search for '{normalized_keyword}'")
-                        # print("current_keyword_occurrences (Boyer-Moore):", current_keyword_occurrences)  # Debugging output
-
-                    # elif selected_algorithm == "Aho-Corasick":
-                    #     current_keyword_occurrences = aho_corasick_search(normalized_cv_content, normalized_keyword)
-                    else:
-                        # Default Python string search (if no algorithm is selected or invalid)
+                    else: # Fallback to Python's built-in if algo is unknown
                         current_keyword_occurrences = normalized_cv_content.count(normalized_keyword)
-
-                    # If there are matches, add to total and store detail
+                    
                     if current_keyword_occurrences > 0:
-                        match_count += current_keyword_occurrences
-                        matched_keywords_detail[keyword] = current_keyword_occurrences
+                        current_applicant_total_matches += current_keyword_occurrences
+                        current_applicant_matched_keywords_detail[original_keyword] = current_keyword_occurrences
+            
+            # Stop timer dan akumulasikan waktu exact match
+            timings["exact_ms"] += stop_timer(exact_match_timer_start, f"Exact Match for Applicant {applicant_id} using {selected_algorithm}")
 
-                    # If no exact match, check for fuzzy matches (typos)
-                    else :
-                        start_time = start_timer()
-                        current_keyword_occurrences = fuzzy_search(normalized_cv_content, normalized_keyword, threshold=0.8)
-                        exec_time_fuzzy = stop_timer(start_time, f"Fuzzy Search for '{normalized_keyword}'")
-                        if current_keyword_occurrences > 0:
-                            match_count += current_keyword_occurrences
-                            typo_keyword = f"{keyword} (typo)"
-                            matched_keywords_detail[typo_keyword] = current_keyword_occurrences  
-                            
-                    timings["exact_ms"] += exec_time_exact if 'exec_time_exact' in locals() else 0
-                    timings["fuzzy_ms"] += exec_time_fuzzy if 'exec_time_fuzzy' in locals() else 0
+            fuzzy_match_timer_start = start_timer()
+            fuzzy_match_processed_for_this_applicant = False
 
-            # Save results if there are any matches for the applicant
-            if match_count > 0:
+            if selected_algorithm != "Aho-Corasick":
+                for original_keyword, normalized_keyword in zip(keywords, normalized_keywords_input):
+                    if original_keyword not in current_applicant_matched_keywords_detail: # Jika belum ada exact match untuk keyword ini
+                        fuzzy_occurrences = fuzzy_search(normalized_cv_content, normalized_keyword, threshold=0.8)
+                        if fuzzy_occurrences > 0:
+                            current_applicant_total_matches += fuzzy_occurrences
+                            typo_keyword = f"{original_keyword} (typo)"
+                            current_applicant_matched_keywords_detail[typo_keyword] = fuzzy_occurrences
+                            fuzzy_match_processed_for_this_applicant = True
+            
+            if fuzzy_match_processed_for_this_applicant:
+                 timings["fuzzy_ms"] += stop_timer(fuzzy_match_timer_start, f"Fuzzy Match for Applicant {applicant_id}")
+
+            if current_applicant_total_matches > 0:
                 applicant_matches.append({
-                    "name": first_name,
-                    "matched_keywords_detail": matched_keywords_detail, # Dictionary of keywords to their counts
-                    "total_matches": match_count,
+                    "name": full_name,
+                    "matched_keywords_detail": current_applicant_matched_keywords_detail,
+                    "total_matches": current_applicant_total_matches,
                     "applicant_id": applicant_id,
-                    "cv_path": full_cv_path, # Store the full path to the CV
-                    "cv_content": cv_content # Store the extracted CV text for summary/view
+                    "cv_path": full_cv_path,
+                    "cv_content": cv_content
                 })
 
-        # Sort results by total_matches (highest to lowest)
-        applicant_matches.sort(key=lambda x: x["total_matches"], reverse=True)
+    # Sort results by total_matches (highest to lowest)
+    applicant_matches.sort(key=lambda x: x["total_matches"], reverse=True)
 
-        # Get top_n results
-        results = applicant_matches[:top_n]
-
+    # Get top_n results
+    results = applicant_matches[:top_n]
+    
     return results, total_cv_scan, timings
        
 # #Contoh cara mengakses fungsi perform_search dan elemen-elementnya
