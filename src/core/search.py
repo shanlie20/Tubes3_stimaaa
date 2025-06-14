@@ -11,7 +11,7 @@ from .boyer_moore import boyer_moore_search
 from .aho_corasick import aho_corasick_search
 from .levenshtein import fuzzy_search
 
-from .pdf_parser import parse_pdf_to_text
+from .pdf_parser import parse_pdf_to_text_and_extract_info
 
 # Hapus islice import untuk deployment
 # from itertools import islice
@@ -49,10 +49,13 @@ def perform_search(keywords: List[str], selected_algorithm: str, top_n: int) -> 
             cv_content = ""
             if os.path.exists(full_cv_path):
                 try:
-                    cv_content = parse_pdf_to_text(full_cv_path)
+                    # Panggil fungsi baru
+                    extracted_cv_data = parse_pdf_to_text_and_extract_info(full_cv_path)
+                    cv_content = extracted_cv_data["full_text_normalized"] # Gunakan normalized text untuk pencarian
+
                 except Exception as e:
-                    print(f"Error parsing PDF {full_cv_path}: {e}")
-                    cv_content = ""
+                    print(f"Error parsing PDF and extracting info from '{full_cv_path}': {e}")
+                    cv_content = "" # Pastikan kosong jika ada error
             else:
                 print(f"File {cv_path} not found at {full_cv_path}.")
             
