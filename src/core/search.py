@@ -1,15 +1,21 @@
 # search.py
 import time
 import os
+
+from src.utils.timer import start_timer, stop_timer
 from typing import List, Tuple
+
 from src.db.database import get_db_session
+from src.db.models import ApplicantProfile, ApplicationDetail  # Importing models
+from src.db.seeder import PROJECT_ROOT
+
 from .kmp import kmp_search
 from .boyer_moore import boyer_moore_search
 from .aho_corasick import aho_corasick_search 
 from .levenshtein import fuzzy_search
+
 from .pdf_parser import parse_pdf_to_text  # Assumed to exist for PDF extraction
-from src.db.models import ApplicantProfile, ApplicationDetail  # Importing models
-from src.db.seeder import PROJECT_ROOT
+
 from .summary import get_candidate_summary  # Importing summary function
 
 # untuk testing saja
@@ -20,12 +26,12 @@ def normalize_text(text: str) -> str:
     """Normalizes text by converting to lowercase and replacing non-alphanumeric characters with spaces."""
     return ''.join([char.lower() if char.isalnum() else ' ' for char in text])
 
-def stop_timer(start_time, action_description=""):
-    """Function to calculate and return execution time in milliseconds."""
-    end_time = time.time()
-    elapsed_time = (end_time - start_time) * 1000  # Convert to milliseconds
-    print(f"{action_description}: {elapsed_time:.2f} ms")
-    return elapsed_time
+# def stop_timer(start_time, action_description=""):
+#     """Function to calculate and return execution time in milliseconds."""
+#     end_time = time.time()
+#     elapsed_time = (end_time - start_time) * 1000  # Convert to milliseconds
+#     print(f"{action_description}: {elapsed_time:.2f} ms")
+#     return elapsed_time
 
 def perform_search(keywords: List[str], selected_algorithm: str, top_n: int) -> Tuple[List[dict], int, dict]:
     """
@@ -74,9 +80,11 @@ def perform_search(keywords: List[str], selected_algorithm: str, top_n: int) -> 
 
             normalized_keywords = [normalize_text(keyword) for keyword in keywords]
             if(selected_algorithm == "Aho-Corasick"):
+                start_time = start_timer()
                 print(f"normalized_keywords: {normalized_keywords}")  # Debugging output
                 matched_keywords_detail = aho_corasick_search(normalized_keywords, normalized_cv_content)
                 match_count = sum(matched_keywords_detail.values())
+                exec_time_exact = stop_timer(start_time, f"Aho-Corasick Search for {len(normalized_keywords)} keywords")
                 print(f"match_count (Aho-Corasick): {match_count}")  # Debugging output
 
             else:
@@ -88,10 +96,14 @@ def perform_search(keywords: List[str], selected_algorithm: str, top_n: int) -> 
 
                     # Selected matching algorithm
                     if selected_algorithm == "KMP":
+                        start_time = start_timer()
                         current_keyword_occurrences = kmp_search(normalized_cv_content, normalized_keyword)
+                        exec_time_exact = stop_timer(start_time, f"{selected_algorithm} Search for '{normalized_keyword}'")
 
                     elif selected_algorithm == "Boyer-Moore":
+                        start_time = start_timer()
                         current_keyword_occurrences = boyer_moore_search(normalized_cv_content, normalized_keyword)
+                        exec_time_exact = stop_timer(start_time, f"{selected_algorithm} Search for '{normalized_keyword}'")
                         # print("current_keyword_occurrences (Boyer-Moore):", current_keyword_occurrences)  # Debugging output
 
                     # elif selected_algorithm == "Aho-Corasick":
@@ -107,12 +119,16 @@ def perform_search(keywords: List[str], selected_algorithm: str, top_n: int) -> 
 
                     # If no exact match, check for fuzzy matches (typos)
                     else :
+                        start_time = start_timer()
                         current_keyword_occurrences = fuzzy_search(normalized_cv_content, normalized_keyword, threshold=0.8)
+                        exec_time_fuzzy = stop_timer(start_time, f"Fuzzy Search for '{normalized_keyword}'")
                         if current_keyword_occurrences > 0:
                             match_count += current_keyword_occurrences
                             typo_keyword = f"{keyword} (typo)"
                             matched_keywords_detail[typo_keyword] = current_keyword_occurrences  
-
+                            
+                    timings["exact_ms"] += exec_time_exact if 'exec_time_exact' in locals() else 0
+                    timings["fuzzy_ms"] += exec_time_fuzzy if 'exec_time_fuzzy' in locals() else 0
 
             # Save results if there are any matches for the applicant
             if match_count > 0:
@@ -130,11 +146,6 @@ def perform_search(keywords: List[str], selected_algorithm: str, top_n: int) -> 
 
         # Get top_n results
         results = applicant_matches[:top_n]
-
-    # Calculate search time
-    total_search_time = stop_timer(search_start_time, f"Total {selected_algorithm} Search")
-    timings["exact_ms"] = total_search_time
-    timings["fuzzy_ms"] = 0  # Placeholder for fuzzy matching if implemented
 
     return results, total_cv_scan, timings
        
