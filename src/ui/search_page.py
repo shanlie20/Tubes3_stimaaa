@@ -56,6 +56,7 @@ def perform_search(keywords: list[str], algorithm: str, top_n: int) -> tuple[lis
 #     # membaca beberapa CV dari file dummy.  
 #     # NOTE: Anda perlu menyesuaikan bagian ini untuk membaca CV dari sumber nyata Anda
 #     # seperti folder CV_data atau dari database.
+    
     # --- SIMULASI PEMBACAAN CV DUMMY ---
     dummy_cv_paths = [
         "core/cv1.pdf", # Pastikan path ini sesuai
@@ -90,7 +91,11 @@ def perform_search(keywords: list[str], algorithm: str, top_n: int) -> tuple[lis
 
     # --- LOGIKA PENCARIAN BERDASARKAN ALGORITMA ---
     search_start_time = start_timer()
-    
+    candidate_matches = [] # Menyimpan {candidate_id, match_count, matched_keywords}
+    for candidate_data in all_cv_contents:
+        cv_id = candidate_data["id"]
+        cv_name = candidate_data["name"]
+        cv_content = candidate_data["content"]
 #     # --- SIMULASI PEMBACAAN CV DUMMY ---
 #     dummy_cv_paths = [
 #         "core/cv1.pdf", # Pastikan path ini sesuai
@@ -132,14 +137,14 @@ def perform_search(keywords: list[str], algorithm: str, top_n: int) -> tuple[lis
 #         cv_name = candidate_data["name"]
 #         cv_content = candidate_data["content"]
         
-#         normalized_cv_content = normalize_text(cv_content) # Normalisasi CV
+        normalized_cv_content = normalize_text(cv_content) # Normalisasi CV
         current_match_count = 0
         current_matched_keywords = {} # Changed to dict to store counts per keyword
 #         current_match_count = 0
 #         current_matched_keywords = {} # Changed to dict to store counts per keyword
 
-#         for keyword in keywords:
-#             normalized_keyword = normalize_text(keyword) # Normalisasi keyword
+        for keyword in keywords:
+            normalized_keyword = normalize_text(keyword) # Normalisasi keyword
             occurrences = []
             if algorithm == "KMP":
                 occurrences = kmp_search(normalized_cv_content, normalized_keyword)
