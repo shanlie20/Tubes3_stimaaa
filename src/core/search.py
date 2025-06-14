@@ -5,7 +5,7 @@ from typing import List, Tuple
 from src.db.database import get_db_session
 from .kmp import kmp_search
 from .boyer_moore import boyer_moore_search
-# from .aho_corasick import aho_corasick_search # Uncomment when implemented
+from .aho_corasick import aho_corasick_search # Uncomment when implemented
 from .pdf_parser import parse_pdf_to_text  # Assumed to exist for PDF extraction
 from src.db.models import ApplicantProfile, ApplicationDetail  # Importing models
 from src.db.seeder import PROJECT_ROOT
@@ -70,33 +70,39 @@ def perform_search(keywords: List[str], selected_algorithm: str, top_n: int) -> 
 
             match_count = 0
             matched_keywords_detail = {} # Stores matched keyword pairs along with their occurrence counts
-            for keyword in keywords:
-                # Normalize keyword
-                normalized_keyword = normalize_text(keyword)
+            if selected_algorithm == "Aho-Corasick":
+                found_keywords = aho_corasick_search(normalized_cv_content, keywords)
+                if found_keywords:
+                    matched_keywords_detail = found_keywords
+                    match_count = sum(found_keywords.values())
+            else:
+                for keyword in keywords:
+                    # Normalize keyword
+                    normalized_keyword = normalize_text(keyword)
 
-                current_keyword_occurrences = 0
+                    current_keyword_occurrences = 0
 
-                # Selected matching algorithm
-                if selected_algorithm == "KMP":
-                    current_keyword_occurrences = kmp_search(normalized_cv_content, normalized_keyword)
+                    # Selected matching algorithm
+                    if selected_algorithm == "KMP":
+                        current_keyword_occurrences = kmp_search(normalized_cv_content, normalized_keyword)
 
-                elif selected_algorithm == "Boyer-Moore":
-                    current_keyword_occurrences = boyer_moore_search(normalized_cv_content, normalized_keyword)
-                    # print("current_keyword_occurrences (Boyer-Moore):", current_keyword_occurrences)  # Debugging output
+                    elif selected_algorithm == "Boyer-Moore":
+                        current_keyword_occurrences = boyer_moore_search(normalized_cv_content, normalized_keyword)
+                        # print("current_keyword_occurrences (Boyer-Moore):", current_keyword_occurrences)  # Debugging output
 
-                elif selected_algorithm == "Aho-Corasick":
-                    current_keyword_occurrences = 0  # Placeholder for Aho-Corasick for now
-                    # If aho_corasick_search returns a list of matches, uncomment and adapt:
-                    # ac_results = aho_corasick_search(normalized_cv_content, normalized_keyword)
-                    # current_keyword_occurrences = len(ac_results) if isinstance(ac_results, list) else ac_results
-                else:
-                    # Default Python string search (if no algorithm is selected or invalid)
-                    current_keyword_occurrences = normalized_cv_content.count(normalized_keyword)
+                    elif selected_algorithm == "Aho-Corasick":
+                        current_keyword_occurrences = 0  # Placeholder for Aho-Corasick for now
+                        # If aho_corasick_search returns a list of matches, uncomment and adapt:
+                        # ac_results = aho_corasick_search(normalized_cv_content, normalized_keyword)
+                        # current_keyword_occurrences = len(ac_results) if isinstance(ac_results, list) else ac_results
+                    else:
+                        # Default Python string search (if no algorithm is selected or invalid)
+                        current_keyword_occurrences = normalized_cv_content.count(normalized_keyword)
 
-                # If there are matches, add to total and store detail
-                if current_keyword_occurrences > 0:
-                    match_count += current_keyword_occurrences
-                    matched_keywords_detail[keyword] = current_keyword_occurrences # Store count for each keyword
+                    # If there are matches, add to total and store detail
+                    if current_keyword_occurrences > 0:
+                        match_count += current_keyword_occurrences
+                        matched_keywords_detail[keyword] = current_keyword_occurrences # Store count for each keyword
 
             # Save results if there are any matches for the applicant
             if match_count > 0:
