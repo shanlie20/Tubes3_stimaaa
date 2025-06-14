@@ -9,7 +9,7 @@ load_dotenv()
 DB_USER = os.getenv("DB_USER", "root")
 DB_PASSWORD = os.getenv("DB_PASSWORD", "password_mysql_anda") 
 DB_HOST = os.getenv("DB_HOST", "localhost")
-DB_PORT = os.getenv("DB_PORT", "3308") 
+DB_PORT = os.getenv("DB_PORT", "3306") 
 DB_NAME = os.getenv("DB_NAME", "ats_db") 
 SERVER_ENGINE_URL = f"mysql+mysqlconnector://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}"
 DATABASE_URL = f"{SERVER_ENGINE_URL}/{DB_NAME}"
