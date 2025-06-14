@@ -21,9 +21,6 @@ from PySide6.QtWidgets import (
 from src.core.search import perform_search
 from .components.keyword_input import KeywordInput
 from .components.result_card import ResultCard
-from src.core.kmp import kmp_search
-# from core.boyer_moore import boyer_moore_search
-# from core.aho_corasick import aho_corasick_search
 from src.core.pdf_parser import parse_pdf_to_text
 from src.utils.timer import start_timer, stop_timer
 from src.utils.keyword_utils import normalize_text, tokenize_text, remove_stopwords, extract_unique_keywords
@@ -169,10 +166,11 @@ class SearchPage(QWidget):
         theme_name = "dark" if window_color.lightness() < 128 else "light"
         self.setProperty("theme", theme_name)
         self.current_page = 0
-        self.results_per_page = 9 
+        self.results_per_page = 10 # This implies 2 rows of 5 cards
         self.all_results = []
         self._build_ui()
         self._show_initial_message()
+        self.showMaximized() # Add this line to maximize the window on startup
 
     # ------------------------------------------------------------------
     # UI construction
@@ -366,31 +364,70 @@ class SearchPage(QWidget):
         end_index = start_index + self.results_per_page
         current_page_results = self.all_results[start_index:end_index]
 
-        if not current_page_results:
+        num_cols = 5 # As per your requirement for 5 columns
+        min_rows_to_display = 2 # To ensure a minimum height of 2 rows (for 10 results_per_page)
+        
+        # Calculate how many total slots we need to fill to maintain the minimum visual size
+        # This will be either the actual number of results, or enough to fill min_rows_to_display * num_cols
+        total_slots_to_fill = max(len(current_page_results), min_rows_to_display * num_cols)
+
+        if not current_page_results and total_slots_to_fill == 0:
+            # Handle the case where there are truly no results and no minimum size is enforced
             no_results_label = QLabel("No results found for the given keywords. Try different keywords.")
             no_results_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
             no_results_label.setStyleSheet("color: #888; font-style: italic; font-size: 16px;")
             no_results_label.setWordWrap(True)
 
-            self.results_grid_layout.addWidget(no_results_label, 0, 0, 1, 1, Qt.AlignmentFlag.AlignCenter)
+            self.results_grid_layout.addWidget(no_results_label, 0, 0, 1, num_cols, Qt.AlignmentFlag.AlignCenter)
             self.results_grid_layout.setRowStretch(0, 1)
             self.results_grid_layout.setColumnStretch(0, 1)
             return
+        elif not current_page_results:
+            # If no actual results, but we still want to maintain the grid size
+            # Display the message in the first cell, spanning all columns
+            no_results_label = QLabel("No results found for the given keywords. Try different keywords.")
+            no_results_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            no_results_label.setStyleSheet("color: #888; font-style: italic; font-size: 16px;")
+            no_results_label.setWordWrap(True)
+            self.results_grid_layout.addWidget(no_results_label, 0, 0, min_rows_to_display, num_cols, Qt.AlignmentFlag.AlignCenter)
+            
+            # Ensure proper stretching for the empty state
+            for i in range(num_cols):
+                self.results_grid_layout.setColumnStretch(i, 1)
+            for i in range(min_rows_to_display):
+                self.results_grid_layout.setRowStretch(i, 1)
+            return
+
 
         row, col = 0, 0
-        for res in current_page_results:
-            card = ResultCard(res)
-            card.summary_clicked.connect(partial(self.summary_requested.emit, res))
-            card.view_cv_clicked.connect(partial(self.view_cv_requested.emit, res.get("name", "N/A"), res.get("cv_content", "CV content not available.")))
-
-            self.results_grid_layout.addWidget(card, row, col)
+        for i in range(total_slots_to_fill):
+            if i < len(current_page_results):
+                res = current_page_results[i]
+                card = ResultCard(res)
+                card.summary_clicked.connect(partial(self.summary_requested.emit, res))
+                card.view_cv_clicked.connect(partial(self.view_cv_requested.emit, res.get("name", "N/A"), res.get("cv_content", "CV content not available.")))
+                self.results_grid_layout.addWidget(card, row, col)
+            else:
+                # Add an empty placeholder widget
+                placeholder_widget = QWidget()
+                # You can add styling here if you want empty slots to be visible, e.g.:
+                # placeholder_widget.setStyleSheet("background-color: #f8f8f8; border: 1px dashed #eee; border-radius: 8px;")
+                placeholder_widget.setMinimumSize(150, 100) # Give it a minimum size based on card size
+                placeholder_widget.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+                self.results_grid_layout.addWidget(placeholder_widget, row, col)
+            
             col += 1
-            if col >= 3: # 3 columns per row
+            if col >= num_cols:
                 col = 0
                 row += 1
 
-        for i in range(3):
+        # Set column and row stretches to ensure even distribution and maintain minimum height
+        for i in range(num_cols):
             self.results_grid_layout.setColumnStretch(i, 1)
+        
+        # Ensure all rows (up to min_rows_to_display) get a stretch factor
+        for i in range(max(row, min_rows_to_display)):
+            self.results_grid_layout.setRowStretch(i, 1)
 
     def _update_pagination_buttons(self):
         total_pages = (len(self.all_results) + self.results_per_page - 1) // self.results_per_page

@@ -4,12 +4,9 @@ from PySide6.QtWidgets import (
     QHBoxLayout,
     QVBoxLayout,
     QLabel,
-    QPushButton,
-    QSpacerItem,
-    QSizePolicy,
+    QPushButton
 )
 from PySide6.QtGui import QDesktopServices
-
 
 class ResultCard(QFrame):
     """Card widget showing basic information about a CV match."""

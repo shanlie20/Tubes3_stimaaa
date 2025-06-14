@@ -7,7 +7,7 @@ def main():
     """Entry point of the application."""
     app = QApplication(sys.argv)
     window = MainWindow()
-    window.show()
+    window.showMaximized()
     sys.exit(app.exec())
 
 
