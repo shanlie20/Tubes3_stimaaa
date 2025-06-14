@@ -1,4 +1,6 @@
 from functools import partial
+from PySide6.QtWidgets import QApplication 
+from PySide6.QtGui import QPalette
 from PySide6.QtCore import Signal, Qt, QPropertyAnimation, QRect, QEasingCurve
 from PySide6.QtWidgets import (
     QWidget,
@@ -82,6 +84,8 @@ class AlgorithmToggle(QWidget):
                 }
                 QPushButton#algoToggleButton:hover {
                     background-color: rgba(0, 0, 0, 0.05); /* Slight hover effect on the white background */
+                    border: 1px solid #c0c0c0;
+                    border-radius: 8px;
                 }
                 QPushButton#algoToggleButton:checked {
                     /* When checked, the slider will be behind it, so we ensure text color contrasts with green */
@@ -160,6 +164,10 @@ class SearchPage(QWidget):
 
     def __init__(self) -> None:
         super().__init__()
+        app_palette = QApplication.instance().palette()
+        window_color = app_palette.color(QPalette.ColorRole.Window)
+        theme_name = "dark" if window_color.lightness() < 128 else "light"
+        self.setProperty("theme", theme_name)
         self.current_page = 0
         self.results_per_page = 9 
         self.all_results = []
@@ -277,7 +285,12 @@ class SearchPage(QWidget):
             QLabel#h1 {
                 font-size: 20pt;
                 font-weight: bold;
+            }
+            SearchPage[theme="light"] QLabel#h1 {
                 color: #333;
+            }
+            SearchPage[theme="dark"] QLabel#h1 {
+                color: white;
             }
             """
         )

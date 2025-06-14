@@ -1,8 +1,14 @@
 import os
 from datetime import date, timedelta
 from faker import Faker
+import subprocess
 
-from .database import get_db_session, ensure_database_exists_and_recreate_if_needed, create_tables_in_db
+from .database import (
+    get_db_session,
+    ensure_database_exists_and_recreate_if_needed,
+    create_tables_in_db,
+    DB_USER, DB_PASSWORD, DB_HOST, DB_PORT, DB_NAME  # <-- Impor variabel
+)
 from .models import ApplicantProfile, ApplicationDetail
 
 fake = Faker('id_ID')
@@ -79,6 +85,45 @@ def seed_database(recreate_db: bool = True):
             print(f"Terjadi error saat seeding: {e}")
             raise
 
+def dump_to_sql(output_filename="ats.sql"):
+    print(f"\nMemulai proses dump database ke '{output_filename}'...")
+    command = [
+        'mysqldump',
+        '--user=' + DB_USER,
+        '--password=' + DB_PASSWORD,
+        '--host=' + DB_HOST,
+        '--port=' + DB_PORT,
+        '--single-transaction', 
+        '--routines',           
+        '--triggers',           
+        DB_NAME
+    ]
+
+    try:
+        with open(output_filename, 'w', encoding='utf-8') as f:
+            process = subprocess.run(
+                command, 
+                stdout=f,               
+                stderr=subprocess.PIPE, 
+                text=True,              
+                check=False             
+            )
+        if process.returncode != 0:
+            print(f"Error saat menjalankan mysqldump:")
+            print(process.stderr)
+            return False
+        print(f"Database '{DB_NAME}' berhasil di-dump ke '{output_filename}'.")
+        return True
+    except FileNotFoundError:
+        print("Error: Perintah 'mysqldump' tidak ditemukan.")
+        print("Pastikan MySQL Client terinstal dan path-nya sudah benar.")
+        return False
+    except Exception as e:
+        print(f"Terjadi error tak terduga saat proses dump: {e}")
+        return False
+
 if __name__ == "__main__":
     print("Menjalankan database seeder (langsung proses per file)...")
     seed_database(recreate_db=True)
+    output_dir = os.path.join(PROJECT_ROOT, "src", "db", "ats.sql")
+    dump_to_sql(output_dir)
