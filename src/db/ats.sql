@@ -1,8 +1,8 @@
--- MySQL dump 10.13  Distrib 8.0.42, for Win64 (x86_64)
+-- MySQL dump 10.13  Distrib 9.3.0, for Win64 (x86_64)
 --
 -- Host: localhost    Database: ats_db
 -- ------------------------------------------------------
--- Server version	8.0.42
+-- Server version	9.3.0
 
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
 /*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
@@ -39,7 +39,7 @@ CREATE TABLE `applicantprofile` (
 
 LOCK TABLES `applicantprofile` WRITE;
 /*!40000 ALTER TABLE `applicantprofile` DISABLE KEYS */;
-INSERT INTO `applicantprofile` VALUES (1,'Imam','Hartati','1986-05-17','Jalan Sadang Serang No. 161, Binjai, Bengkulu 53304','+62 (0179) 835-5466'),(2,'Yusuf','Budiman','1988-02-06','Jalan Pelajar Pejuang No. 977, Sawahlunto, Jawa Timur 29569','0859222834'),(3,'Jati','Permata','1991-12-08','Jl. Kapten Muslihat No. 05, Banjar, PA 64697','+62 (510) 449 6980'),(4,'Tasdik','Pudjiastuti','1993-11-25','Jalan Rawamangun No. 626, Yogyakarta, JA 87304','+62-15-053-3728'),(5,'Prayoga','Utami','1976-12-24','Jl. Ahmad Yani No. 3, Sabang, PB 26254','+62 (44) 270-3736'),(6,'Ihsan','Susanti','1999-10-14','Gang Stasiun Wonokromo No. 0, Lubuklinggau, SG 52647','+62 (574) 509-5633'),(7,'Karman','Rahmawati','1992-10-21','Gg. K.H. Wahid Hasyim No. 6, Padang, JA 67311','+62 (0535) 282 8104'),(8,'Kartika','Firgantoro','1991-05-26','Jl. Jend. Sudirman No. 782, Langsa, DI Yogyakarta 02229','(0523) 797-0012'),(9,'Umi','Namaga','1987-07-08','Gg. Jakarta No. 771, Metro, Kalimantan Utara 33780','+62 (876) 969-3357'),(10,'Arsipatra','Situmorang','2000-05-12','Jl. Gedebage Selatan No. 89, Pematangsiantar, SS 61798','+62 (77) 333 8313'),(11,'Sidiq','Gunawan','1981-08-31','Gang Abdul Muis No. 655, Tasikmalaya, KS 13830','0860814691'),(12,'Viman','Yolanda','2007-03-04','Jalan Surapati No. 805, Madiun, Sulawesi Tenggara 56198','+62 (51) 131-2056');
+INSERT INTO `applicantprofile` VALUES (1,'Edi','Hassanah','1991-10-12','Gang Sadang Serang No. 481, Singkawang, DKI Jakarta 56221','+62 (65) 563 4750'),(2,'Kasim','Mulyani','1986-06-12','Gg. M.H Thamrin No. 962, Langsa, Banten 55661','+62-311-907-9642'),(3,'Darimin','Nababan','1998-05-27','Jl. Cempaka No. 871, Sabang, SG 95605','+62 (0263) 918 8712'),(4,'Elon','Manullang','1988-03-23','Jl. Gedebage Selatan No. 0, Palopo, Kepulauan Bangka Belitung 66664','(0752) 650 4528'),(5,'Melinda','Maheswara','2003-08-20','Gg. HOS. Cokroaminoto No. 983, Subulussalam, JT 76891','+62 (631) 786-0787'),(6,'Galih','Marpaung','1999-01-23','Jl. PHH. Mustofa No. 32, Padangpanjang, Sulawesi Tenggara 29934','+62 (053) 249 4619'),(7,'Kani','Suryatmi','2004-06-23','Jalan Astana Anyar No. 11, Surakarta, YO 24369','(0504) 375-8810'),(8,'Luluh','Hakim','1990-12-09','Gang Pelajar Pejuang No. 7, Padang Sidempuan, Kalimantan Utara 43333','+62 (0726) 128 5481'),(9,'Hilda','Hidayat','1990-05-11','Gg. R.E Martadinata No. 1, Batu, KU 99416','+62 (0303) 823-8158'),(10,'Pangestu','Adriansyah','1977-04-15','Gang Erlangga No. 751, Sabang, Jambi 59138','+62 (990) 403 1981'),(11,'Farhunnisa','Sitorus','2001-01-03','Gg. Cikutra Timur No. 0, Tomohon, SG 19649','(076) 969-1737'),(12,'Rama','Hasanah','1990-11-20','Jalan Otto Iskandardinata No. 740, Surakarta, Bengkulu 89303','+62-923-525-3154');
 /*!40000 ALTER TABLE `applicantprofile` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -84,4 +84,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2025-06-14 14:27:54
+-- Dump completed on 2025-06-14 17:45:00

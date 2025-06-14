@@ -1,4 +1,4 @@
-from PySide6.QtCore import Qt, Signal
+from PySide6.QtCore import Qt, Signal, QUrl
 from PySide6.QtWidgets import (
     QFrame,
     QHBoxLayout,
@@ -8,6 +8,7 @@ from PySide6.QtWidgets import (
     QSpacerItem,
     QSizePolicy,
 )
+from PySide6.QtGui import QDesktopServices
 
 
 class ResultCard(QFrame):
@@ -70,7 +71,7 @@ class ResultCard(QFrame):
 
         view_cv_btn = QPushButton("View CV")
         # Pass cv_path for viewing the CV
-        view_cv_btn.clicked.connect(lambda: self.view_cv_clicked.emit(self._data.get("cv_path", ""))) 
+        view_cv_btn.clicked.connect(self.open_cv_pdf)
         bottom_h_layout.addWidget(view_cv_btn)
         main_v_layout.addLayout(bottom_h_layout)
 
@@ -100,3 +101,15 @@ class ResultCard(QFrame):
             }
             """
         )
+
+    def open_cv_pdf(self):
+        """Open the CV PDF based on the cv_path."""
+        cv_path = self._data.get("cv_path", "")  # Mendapatkan cv_path dari data kandidat
+        
+        if cv_path:
+            # Convert the file path to a URL
+            cv_url = QUrl.fromLocalFile(cv_path)
+            # Use QDesktopServices to open the URL in the default PDF viewer
+            QDesktopServices.openUrl(cv_url)
+        else:
+            print("CV file not found!")
