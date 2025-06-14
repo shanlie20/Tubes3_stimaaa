@@ -1,152 +1,167 @@
 from functools import partial
-from src.core.search import perform_search
-
-from PySide6.QtCore import Signal, Qt
+from PySide6.QtCore import Signal, Qt, QPropertyAnimation, QRect, QEasingCurve
 from PySide6.QtWidgets import (
     QWidget,
     QVBoxLayout,
     QHBoxLayout,
     QLabel,
     QButtonGroup,
-    QRadioButton,
-    QSpinBox,
     QPushButton,
+    QSpinBox,
     QScrollArea,
     QFrame,
-    QGridLayout,  # Added for grid layout
-    QSpacerItem, # Added for flexible spacing
-    QSizePolicy # Added for size policies
+    QGridLayout,
+    QSpacerItem,
+    QSizePolicy
 )
 
+# Assume these imports are correct and available
+from src.core.search import perform_search
 from .components.keyword_input import KeywordInput
 from .components.result_card import ResultCard
-
-# Import the actual core search logic and utilities
 from src.core.kmp import kmp_search
-# from core.boyer_moore import boyer_moore_search # Akan diimplementasikan nanti
-# from core.aho_corasick import aho_corasick_search # Akan diimplementasikan nanti
-from src.core.pdf_parser import parse_pdf_to_text # Asumsi fungsi ini ada untuk membaca CV
+# from core.boyer_moore import boyer_moore_search
+# from core.aho_corasick import aho_corasick_search
+from src.core.pdf_parser import parse_pdf_to_text
 from src.utils.timer import start_timer, stop_timer
 from src.utils.keyword_utils import normalize_text, tokenize_text, remove_stopwords, extract_unique_keywords
-from src.utils.file_utils import read_file_content # Jika CV disimpan sebagai teks biasa
+from src.utils.file_utils import read_file_content
 
-# def perform_search(keywords: list[str], algorithm: str, top_n: int) -> tuple[list[dict], int, dict]:
-#     """
-#     Melakukan pencarian CV berdasarkan kata kunci menggunakan algoritma yang dipilih.
-#     Ini adalah placeholder yang perlu diperluas untuk membaca CV dari database atau folder.
-#     """
-#     results = []
-#     total_search_cv = 0
-#     timings = {"exact_ms": 0, "fuzzy_ms": 0}
 
-#     # Asumsi: Anda memiliki daftar CV yang dapat diakses, misalnya dari database
-#     # atau dari folder tertentu. Untuk contoh ini, kita akan simulasikan
-#     # membaca beberapa CV dari file dummy.
+class AlgorithmToggle(QWidget):
+    """
+    A custom toggle widget for selecting algorithms with a sliding animation.
+    """
+    algorithm_selected = Signal(str) # Emits the text of the selected algorithm
     
-#     # NOTE: Anda perlu menyesuaikan bagian ini untuk membaca CV dari sumber nyata Anda
-#     # seperti folder CV_data atau dari database.
-    
-#     # --- SIMULASI PEMBACAAN CV DUMMY ---
-#     dummy_cv_paths = [
-#         "core/cv1.pdf", # Pastikan path ini sesuai
-#         "core/cv2.pdf", # Contoh CV dummy
-#         "core/cv3.pdf",
-#         "core/cv4.pdf",
-#         "core/cv5.pdf",
-#         "core/cv6.pdf",
-#         "core/cv7.pdf",
-#         "core/cv8.pdf",
-#         "core/cv9.pdf",
-#         "core/cv10.pdf",
-#         "core/cv11.pdf",
-#         "core/cv12.pdf",
-#         # ... tambahkan path CV lainnya
-#     ]
-    
-#     all_cv_contents = []
-#     for i, cv_path in enumerate(dummy_cv_paths):
-#         try:
-#             # For demonstration, we'll use a dummy text if the file read fails
-#             cv_text = read_file_content(cv_path)
-#             if not cv_text:
-#                 cv_text = f"Ini adalah dummy CV {i+1} untuk pengujian. Di sini ada kata {'Python' if i%2 == 0 else 'JavaScript'} dan juga {'React' if i%3 == 0 else 'Java'}. Programmer, Developer."
+    def __init__(self, algorithms: list[str], parent=None):
+        super().__init__(parent)
+        self.algorithms = algorithms
+        self.current_index = -1 # No default selected algorithm initially
 
-#             all_cv_contents.append({"id": i + 1, "content": cv_text, "name": f"Applicant {i + 1}"})
-#         except Exception as e:
-#             print(f"Error processing CV {cv_path}: {e}")
-#             continue
+        self.setFixedHeight(40) # Fixed height for the toggle widget
+        # Set a minimum width for the toggle widget to ensure it can fit all buttons
+        self.setMinimumWidth(len(algorithms) * 120 + 40) 
+        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed) # Allow horizontal expansion
 
-#     total_search_cv = len(all_cv_contents)
+        self.main_layout = QHBoxLayout(self)
+        self.main_layout.setContentsMargins(4, 2, 4, 2) # Slightly increased horizontal padding for the track
+        self.main_layout.setSpacing(0)
 
-#     # --- LOGIKA PENCARIAN BERDASARKAN ALGORITMA ---
-#     search_start_time = start_timer()
-    
-#     candidate_matches = [] # Menyimpan {candidate_id, match_count, matched_keywords}
+        # Background slider - This will now represent the active, green area *behind* the text
+        self.slider = QLabel(self)
+        self.slider.setObjectName("slider")
+        self.slider.setStyleSheet("""
+            QLabel#slider {
+                background-color: #4CAF50; /* Green background for the slider */
+                border-radius: 8px;
+            }
+        """)
+        self.slider.setGeometry(0, 0, 0, 0) # Initial geometry will be set in _position_slider
 
-#     for candidate_data in all_cv_contents:
-#         cv_id = candidate_data["id"]
-#         cv_name = candidate_data["name"]
-#         cv_content = candidate_data["content"]
-        
-#         normalized_cv_content = normalize_text(cv_content) # Normalisasi CV
+        self.current_animation = QPropertyAnimation(self.slider, b"geometry", self)
+        self.current_animation.setDuration(200) # milliseconds
+        self.current_animation.setEasingCurve(QEasingCurve.OutCubic)
 
-#         current_match_count = 0
-#         current_matched_keywords = {} # Changed to dict to store counts per keyword
+        self.button_group = QButtonGroup(self)
+        self.button_group.setExclusive(True) # Only one button can be checked at a time
+        self.buttons = []
 
-#         for keyword in keywords:
-#             normalized_keyword = normalize_text(keyword) # Normalisasi keyword
+        for i, algo_name in enumerate(self.algorithms):
+            btn = QPushButton(algo_name, self)
+            btn.setCheckable(True)
+            btn.setObjectName("algoToggleButton")
+            btn.setStyleSheet("""
+                QPushButton#algoToggleButton {
+                    background-color: transparent; /* Initially transparent to show parent's background */
+                    border: none;
+                    color: #555; /* Dark gray text for unselected buttons */
+                    font-size: 10pt;
+                    font-weight: normal;
+                    padding: 8px 16px; 
+                }
+                QPushButton#algoToggleButton:hover {
+                    background-color: rgba(0, 0, 0, 0.05); /* Slight hover effect on the white background */
+                }
+                QPushButton#algoToggleButton:checked {
+                    /* When checked, the slider will be behind it, so we ensure text color contrasts with green */
+                    color: white; /* White text for selected button (on green slider) */
+                    font-weight: bold;
+                }
+            """)
+            btn.setMinimumWidth(120) 
+            btn.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
             
-#             occurrences = []
-#             if algorithm == "KMP":
-#                 occurrences = kmp_search(normalized_cv_content, normalized_keyword)
-#             # elif algorithm == "Boyer-Moore":
-#             #     occurrences = boyer_moore_search(normalized_cv_content, normalized_keyword)
-#             # elif algorithm == "Aho-Corasick":
-#             #     # Aho-Corasick biasanya lebih efisien untuk mencari banyak pola sekaligus
-#             #     # Anda mungkin perlu menyesuaikan pemanggilan fungsi ini
-#             #     occurrences = aho_corasick_search(normalized_cv_content, normalized_keyword)
-#             else:
-#                 # Fallback untuk algoritma yang belum diimplementasikan
-#                 # Anda bisa menggunakan pencarian string bawaan Python
-#                 occurrences = [i for i in range(len(normalized_cv_content) - len(normalized_keyword) + 1)
-#                                if normalized_cv_content[i:i+len(normalized_keyword)] == normalized_keyword]
+            self.main_layout.addWidget(btn)
+            self.button_group.addButton(btn, i)
+            self.buttons.append(btn)
+            
+            btn.toggled.connect(partial(self._on_button_toggled, btn, i))
 
-#             if occurrences:
-#                 current_match_count += len(occurrences)
-#                 current_matched_keywords[keyword] = current_matched_keywords.get(keyword, 0) + len(occurrences)
+        # Main container styling (the "track" background)
+        self.setStyleSheet("""
+            AlgorithmToggle {
+                background-color: white; /* White background for the entire toggle track */
+                border-radius: 10px;
+                border: 1px solid #ccc; /* Add a subtle border */
+            }
+        """)
 
-#         if current_match_count > 0:
-#             candidate_matches.append({
-#                 "name": cv_name,
-#                 "matched_keywords": current_matched_keywords, # Store as dict
-#                 "total_matches": current_match_count,
-#                 "applicant_id": cv_id,
-#                 "cv_content": cv_content # Include content for 'View CV'
-#             })
-    
-#     # Urutkan hasil berdasarkan match_count (tertinggi ke terendah) dan ambil top_n
-#     candidate_matches.sort(key=lambda x: x["total_matches"], reverse=True)
-#     results = candidate_matches[:top_n]
-    
-#     # Hitung waktu eksekusi
-#     total_search_time = stop_timer(search_start_time, f"Total {algorithm} Search")
-#     timings["exact_ms"] = total_search_time
-#     timings["fuzzy_ms"] = 0 # Placeholder if no separate fuzzy logic
+    def showEvent(self, event):
+        super().showEvent(event)
+        # On initial show, if no button is checked, ensure the slider is hidden or not positioned
+        if not self.button_group.checkedButton():
+            self.slider.setVisible(False)
+        else:
+            self.slider.setVisible(True)
+            checked_button = self.button_group.checkedButton()
+            index = self.button_group.id(checked_button)
+            self._position_slider(checked_button, index, animate=False)
 
-#     return results, total_search_cv, timings
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        if self.buttons and self.button_group.checkedButton():
+            checked_button = self.button_group.checkedButton()
+            index = self.button_group.id(checked_button)
+            self._position_slider(checked_button, index, animate=False)
+
+
+    def _on_button_toggled(self, button: QPushButton, index: int, checked: bool):
+        if checked:
+            self.current_index = index
+            self.slider.setVisible(True) # Make slider visible when a button is selected
+            self._position_slider(button, index) # Animate by default
+            self.algorithm_selected.emit(button.text())
+        else:
+            # If a button is unchecked (due to another being selected), the slider will move
+            # We don't need to hide it here, as it's always under one button.
+            pass
+
+
+    def _position_slider(self, target_button: QPushButton, index: int, animate=True):
+        if self.current_animation.state() == QPropertyAnimation.Running:
+            self.current_animation.stop()
+
+        final_rect = target_button.geometry()
+        
+        if animate:
+            self.current_animation.setStartValue(self.slider.geometry())
+            self.current_animation.setEndValue(final_rect)
+            self.current_animation.start()
+        else:
+            self.slider.setGeometry(final_rect)
 
 
 class SearchPage(QWidget):
     """Page that lets the recruiter search CVs by keyword."""
 
-    # Adjusted signal to emit all relevant data for the summary page
-    summary_requested = Signal(dict) 
+    summary_requested = Signal(dict)
     view_cv_requested = Signal(str, str) # New signal for viewing CV (applicant name, cv content)
 
     def __init__(self) -> None:
         super().__init__()
         self.current_page = 0
-        self.results_per_page = 9 # 3 rows * 3 columns
+        self.results_per_page = 9 
         self.all_results = []
         self._build_ui()
         self._show_initial_message()
@@ -167,36 +182,34 @@ class SearchPage(QWidget):
         root.addWidget(title)
 
         # -- Keyword input --
-        self.keyword_input = KeywordInput(placeholder="Masukkan keyword, pisahkan dengan koma …")
+        self.keyword_input = KeywordInput(placeholder="Enter keywords, separated by commas...")
         root.addWidget(self.keyword_input)
+        
+        # -- Algorithm selector (Animated Toggle) & Top-N selector --
+        algorithm_selection_layout = QHBoxLayout()
+        # Adjusted contents margins to reduce top and bottom padding
+        algorithm_selection_layout.setContentsMargins(0, 2, 0, 2) 
 
-        # -- Algorithm selector & top‑N selector --
-        line = QHBoxLayout()
+        algorithm_label = QLabel("Select Algorithm:")
+        algorithm_label.setAlignment(Qt.AlignmentFlag.AlignVCenter)
+        algorithm_label.setStyleSheet("font-weight: bold; font-size: 10pt;")
+        algorithm_selection_layout.addWidget(algorithm_label)
 
-        # Radio buttons for algorithm
-        self.alg_group = QButtonGroup(self)
-        rb_kmp = QRadioButton("KMP")
-        rb_bm = QRadioButton("Boyer-Moore")
-        rb_ac = QRadioButton("Aho-Corasick")
-        rb_kmp.setChecked(True)
-        self.alg_group.addButton(rb_kmp)
-        self.alg_group.addButton(rb_bm)
-        self.alg_group.addButton(rb_ac)
+        self.algo_toggle = AlgorithmToggle(algorithms=["KMP", "Boyer-Moore", "Aho-Corasick"])
+        self.algo_toggle.algorithm_selected.connect(self._on_algorithm_selected)
+        self.algo_toggle.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+        algorithm_selection_layout.addWidget(self.algo_toggle)
 
-        line.addWidget(rb_kmp)
-        line.addWidget(rb_bm)
-        line.addWidget(rb_ac)
-
-        # Top‑N spinbox
-        line.addStretch(1)
+        # Top-N spinbox
+        algorithm_selection_layout.addStretch(1) 
         top_label = QLabel("Top matches:")
         self.top_spin = QSpinBox()
-        self.top_spin.setRange(1, 480) # Max 480 matches
+        self.top_spin.setRange(1, 480) 
         self.top_spin.setValue(10)
-        line.addWidget(top_label)
-        line.addWidget(self.top_spin)
+        algorithm_selection_layout.addWidget(top_label)
+        algorithm_selection_layout.addWidget(self.top_spin)
 
-        root.addLayout(line)
+        root.addLayout(algorithm_selection_layout)
 
         # -- Search button --
         self.search_btn = QPushButton("Search")
@@ -204,23 +217,41 @@ class SearchPage(QWidget):
         self.search_btn.clicked.connect(self._on_search_clicked)
         root.addWidget(self.search_btn)
 
-        # -- Summary execution time and total CVs --
+        # -- Summary execution time and total CVs (moved here) --
         info_layout = QHBoxLayout()
         self.exec_time_lbl = QLabel("")
         self.total_cv_lbl = QLabel("")
         info_layout.addWidget(self.exec_time_lbl)
         info_layout.addStretch(1)
         info_layout.addWidget(self.total_cv_lbl)
-        root.addLayout(info_layout)
+        root.addLayout(info_layout) # Added directly to the root layout
 
-        # -- Results area (Scrollable) --
+        # --- White background frame for results ---
+        self.results_background_frame = QFrame()
+        self.results_background_frame.setObjectName("resultsBackgroundFrame")
+        self.results_background_frame.setStyleSheet("""
+            QFrame#resultsBackgroundFrame {
+                background-color: white;
+                border-radius: 10px;
+                border: 1px solid #e0e0e0;
+            }
+        """)
+        results_frame_layout = QVBoxLayout(self.results_background_frame)
+        results_frame_layout.setContentsMargins(15, 15, 15, 15) # Padding inside the white box
+        results_frame_layout.setSpacing(10)
+
+        # -- Results area (Scrollable) (moved into the new frame) --
         self.results_scroll_area = QScrollArea()
         self.results_scroll_area.setWidgetResizable(True)
         self.results_container = QWidget()
-        self.results_grid_layout = QGridLayout(self.results_container) # Use QGridLayout
-        self.results_grid_layout.setSpacing(10) # Spacing between cards
+        # Set the background of the results_container to white
+        self.results_container.setStyleSheet("QWidget { background-color: white; }")
+        self.results_grid_layout = QGridLayout(self.results_container)
+        self.results_grid_layout.setSpacing(10) 
         self.results_scroll_area.setWidget(self.results_container)
-        root.addWidget(self.results_scroll_area, 1) # Give it stretch factor
+        results_frame_layout.addWidget(self.results_scroll_area, 1) # Give it stretch factor within the frame
+        
+        root.addWidget(self.results_background_frame, 1) # Add the new frame to the root layout, give it stretch
 
         # --- Pagination Controls ---
         self.pagination_layout = QHBoxLayout()
@@ -240,23 +271,28 @@ class SearchPage(QWidget):
         self.pagination_layout.addStretch(1)
         root.addLayout(self.pagination_layout)
 
-        # Styling placeholder via object names – use Qt stylesheets in main if needed
+        # Styling for the main page (h1)
+        self.setStyleSheet(
+            """
+            QLabel#h1 {
+                font-size: 20pt;
+                font-weight: bold;
+                color: #333;
+            }
+            """
+        )
+        self.selected_algorithm = None 
 
     def _show_initial_message(self):
         """Displays a message in the results area when no search has been performed."""
-        # Clear any existing widgets AND spacers
         self._clear_grid_layout()
-        
+
         message_label = QLabel("Please input keywords, top matches, and select an algorithm to perform a search.")
         message_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         message_label.setStyleSheet("color: #888; font-style: italic; font-size: 16px;")
         message_label.setWordWrap(True)
-        
-        # Create a single-cell layout that spans the entire grid
-        # This ensures the message is truly centered
+
         self.results_grid_layout.addWidget(message_label, 0, 0, 1, 1, Qt.AlignmentFlag.AlignCenter)
-        
-        # Set the grid to have flexible sizing
         self.results_grid_layout.setRowStretch(0, 1)
         self.results_grid_layout.setColumnStretch(0, 1)
 
@@ -269,8 +305,7 @@ class SearchPage(QWidget):
                 widget.deleteLater()
             elif item.spacerItem():
                 self.results_grid_layout.removeItem(item)
-        
-        # Reset all stretches
+
         for i in range(self.results_grid_layout.rowCount()):
             self.results_grid_layout.setRowStretch(i, 0)
         for i in range(self.results_grid_layout.columnCount()):
@@ -279,40 +314,39 @@ class SearchPage(QWidget):
     # ------------------------------------------------------------------
     # Event handlers
     # ------------------------------------------------------------------
+    def _on_algorithm_selected(self, algorithm_name: str):
+        """Receives the selected algorithm from the AlgorithmToggle widget."""
+        self.selected_algorithm = algorithm_name
+
     def _on_search_clicked(self):
         keywords = self.keyword_input.keywords()
         if not keywords:
-            self.exec_time_lbl.setText("Masukkan minimal satu keyword!")
+            self.exec_time_lbl.setText("Please enter at least one keyword!")
             self.total_cv_lbl.setText("")
-            self._show_initial_message() # Show initial message again if no keywords
+            self._show_initial_message()
             return
 
-        selected_algorithm = ""
-        for button in self.alg_group.buttons():
-            if button.isChecked():
-                selected_algorithm = button.text()
-                break
-        
+        if self.selected_algorithm is None:
+            self.exec_time_lbl.setText("Please select an algorithm!")
+            self.total_cv_lbl.setText("")
+            return
+
         top_n = self.top_spin.value()
 
-        # Perform the search
-        results, total_cv_scan, timings = perform_search(keywords, selected_algorithm, top_n)
-        self.all_results = results # Store all results for pagination
-        self.current_page = 0 # Reset to first page
-        
-        # Update timings and total CVs scanned labels
+        results, total_cv_scan, timings = perform_search(keywords, self.selected_algorithm, top_n)
+        self.all_results = results 
+        self.current_page = 0 
+
         self.exec_time_lbl.setText(
-            f"Waktu Pencarian {selected_algorithm}: {timings['exact_ms']:.2f} ms"
+            f"Exact Search Time ({self.selected_algorithm}): {timings['exact_ms']:.2f} ms"
             f" | Fuzzy Match: {timings['fuzzy_ms']:.2f} ms"
         )
-        self.total_cv_lbl.setText(f"Total CV Diproses: {total_cv_scan}")
+        self.total_cv_lbl.setText(f"Total CVs Processed: {total_cv_scan}")
 
-        # Populate result cards for the current page
         self._populate_current_page_results()
         self._update_pagination_buttons()
 
     def _populate_current_page_results(self):
-        # Clear old cards and any spacers
         self._clear_grid_layout()
 
         start_index = self.current_page * self.results_per_page
@@ -320,34 +354,28 @@ class SearchPage(QWidget):
         current_page_results = self.all_results[start_index:end_index]
 
         if not current_page_results:
-            # If no results, display a specific message
             no_results_label = QLabel("No results found for the given keywords. Try different keywords.")
             no_results_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
             no_results_label.setStyleSheet("color: #888; font-style: italic; font-size: 16px;")
             no_results_label.setWordWrap(True)
 
-            # Add the label to span the entire grid for proper centering
             self.results_grid_layout.addWidget(no_results_label, 0, 0, 1, 1, Qt.AlignmentFlag.AlignCenter)
-            
-            # Set stretch to make it truly centered
             self.results_grid_layout.setRowStretch(0, 1)
             self.results_grid_layout.setColumnStretch(0, 1)
             return
 
-        # Add cards in a 3-column grid
         row, col = 0, 0
         for res in current_page_results:
             card = ResultCard(res)
             card.summary_clicked.connect(partial(self.summary_requested.emit, res))
             card.view_cv_clicked.connect(partial(self.view_cv_requested.emit, res.get("name", "N/A"), res.get("cv_content", "CV content not available.")))
-            
+
             self.results_grid_layout.addWidget(card, row, col)
             col += 1
             if col >= 3: # 3 columns per row
                 col = 0
                 row += 1
 
-        # Set column stretches to ensure cards are evenly distributed
         for i in range(3):
             self.results_grid_layout.setColumnStretch(i, 1)
 
@@ -363,6 +391,7 @@ class SearchPage(QWidget):
         if self.current_page > 0:
             self.current_page -= 1
             self._populate_current_page_results()
+            self._update_pagination_buttons() 
 
     def _next_page(self):
         total_pages = (len(self.all_results) + self.results_per_page - 1) // self.results_per_page

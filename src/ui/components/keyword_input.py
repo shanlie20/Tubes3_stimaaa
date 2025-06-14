@@ -15,7 +15,7 @@ class KeywordInput(QWidget):
         self.line_edit.setPlaceholderText(placeholder)
         layout.addWidget(self.line_edit)
 
-        hint = QLabel("Pisahkan keyword dengan koma, contoh: Python, React, SQL")
+        hint = QLabel("Separate keywords with commas, e.g.: Python, React, SQL")
         hint.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
         hint.setStyleSheet("color: gray; font-size: 10pt;")
         layout.addWidget(hint)
