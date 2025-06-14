@@ -20,3 +20,12 @@ untuk jalanin databasenya
 - di terminal run ini
 python src/db/seeder.py
 (ga perlu buat database ats_db dulu)
+
+- isi dari file .env
+```
+DB_USER=root #biasanya (sesuaikan dengan user database Anda)
+DB_PASSWORD=your_password #ganti dengan password database Anda
+DB_HOST=localhost #biasanya (sesuaikan dengan host database Anda)
+DB_PORT=3306 #default (sesuaikan dengan port database Anda)
+DB_NAME=ats_db #jangan diubah, ini adalah nama database yang akan digunakan oleh aplikasi
+```
