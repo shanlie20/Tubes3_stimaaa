@@ -1,14 +1,11 @@
 import pdfplumber
 import os
-import re # Import the re module for regular expressions
+import re
 
 def extract_text_from_pdf_raw(pdf_path: str) -> str | None:
-    """
-    Extracts raw text content from a PDF file.
-    """
     if not os.path.exists(pdf_path):
         return None
-
+    
     text = ""
     try:
         with pdfplumber.open(pdf_path) as pdf:
@@ -18,142 +15,215 @@ def extract_text_from_pdf_raw(pdf_path: str) -> str | None:
                     text += page_text + "\n"
         return text
     except Exception as e:
-        # print(f"Error extracting raw text from PDF '{pdf_path}': {e}")
         return None
 
 def combine_and_normalize_text(raw_extract_text: str) -> str:
-    """
-    Combines lines, removes extra spaces, and converts text to lowercase.
-    """
     if not raw_extract_text:
         return ""
-
+        
     lines = raw_extract_text.splitlines()
     cleaned_lines = [line.strip() for line in lines if line.strip() != '']
-    combined_text = ' '.join(cleaned_lines).lower()
+    # Jangan lowercase di sini karena Regex Case Insensitive akan digunakan
+    # dan kita mungkin perlu case untuk ekstraksi yang akurat atau tampilan
+    combined_text = ' '.join(cleaned_lines) # Hapus .lower()
     return combined_text
 
-# --- New functions for Regex extraction ---
-
-def _extract_emails(text: str) -> list[str]:
-    """Extracts email addresses from text."""
-    # Regex for common email formats
-    email_pattern = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b'
-    # Use re.findall to get all matches, then convert to set to get unique emails
-    return list(set(re.findall(email_pattern, text, re.IGNORECASE)))
+# --- Fungsi Ekstraksi Regex yang Disesuaikan ---
 
 def _extract_phone_numbers(text: str) -> list[str]:
-    """Extracts common phone number formats from text."""
-    # Regex for various international/local phone number formats
-    # Examples: +62 812 3456 7890, (021) 1234567, 0812-3456-7890, 123-456-7890
-    phone_pattern = r'\b(?:\+?\d{1,3}[-.\s]?)?\(?\d{2,4}\)?[-.\s]?\d{3,4}[-.\s]?\d{3,4}(?:[-.\s]?\d{1,4})?\b'
-    found_phones = re.findall(phone_pattern, text)
-    # Basic filtering for very short numbers that might be false positives
-    return list(set([p for p in found_phones if len(re.sub(r'\D', '', p)) >= 8])) # Min 8 digits after removing non-digits
+    phone_pattern = re.compile(
+        r'\b(?:\+?\d{1,3}[-.\s]?)?\(?\d{2,4}\)?[-.\s]?\d{3,4}[-.\s]?\d{3,4}(?:[-.\s]?\d{1,4})?\b'
+    )
+    found_phones = phone_pattern.findall(text)
+    return list(set([p for p in found_phones if len(re.sub(r'\D', '', p)) >= 8]))
+
+def _extract_skills(text: str) -> list[str]:
+    """
+    Mengambil daftar keterampilan dari bagian 'Skills:' hingga bagian selanjutnya.
+    Pola ini lebih spesifik untuk format CV di mana skills ada di bagian bawah,
+    seringkali dipisahkan oleh koma atau dengan satu spasi (jika dari daftar panjang).
+    """
+    # Mencari bagian "Skills" dan mengambil semua teks sampai akhir dokumen
+    # atau sampai section berikutnya (jika ada lagi setelah Skills)
+    skills_section_match = re.search(
+        r'(?:skills|skill):?\s*(.*?)(?:\n[A-Z][A-Za-z\s]+:|$)', # Cari "Skills:" dan ambil sampai newline + uppercase header atau akhir
+        text, re.IGNORECASE | re.DOTALL
+    )
+    
+    if skills_section_match:
+        skills_text = skills_section_match.group(1).strip()
+        # Hapus karakter backslash jika ada
+        skills_text = re.sub(r'\\', '', skills_text)
+        
+        # Pecah berdasarkan koma, atau dua spasi atau lebih, atau bullet/dash.
+        # Kemudian bersihkan entri kosong.
+        raw_skills = re.split(r',\s*|,\s*\n|;\s*|\n\s*•\s*|\n\s*-\s*|\s{2,}', skills_text)
+        
+        cleaned_skills = []
+        for skill in raw_skills:
+            s = skill.strip()
+            # Hapus angka yang berdiri sendiri, misal "8" pada "8 Magna Cum Lade"
+            if re.match(r'^\d+$', s):
+                continue
+            if s and len(s) > 1: # Pastikan bukan string kosong atau terlalu pendek
+                cleaned_skills.append(s)
+        
+        # Filter kata kunci yang terlalu umum atau tidak relevan jika perlu
+        # Contoh:
+        # common_junk = ["management", "services", "solutions"]
+        # cleaned_skills = [s for s in cleaned_skills if s.lower() not in common_junk]
+
+        return list(set(cleaned_skills)) # Hapus duplikat
+    return []
 
 
-def _extract_urls(text: str) -> list[str]:
-    """Extracts URLs (e.g., LinkedIn, GitHub, personal websites) from text."""
-    # Regex for common URL formats
-    url_pattern = r'https?://(?:[-\w.]|(?:%[\da-fA-F]{2}))+' # Basic URL pattern
-    return list(set(re.findall(url_pattern, text)))
+def _extract_job_history(text: str) -> list[dict]:
+    """
+    Ekstraksi job history yang lebih robust berdasarkan format CV yang diberikan.
+    """
+    job_history_section_match = re.search(
+        r'(?:job history|experience):?\s*(.*?)(?:education:|skills:|accomplishments:|summary:|$)',
+        text, re.IGNORECASE | re.DOTALL
+    )
+    
+    extracted_jobs = []
+    if job_history_section_match:
+        job_text = job_history_section_match.group(1).strip()
+        
+        # Pola untuk setiap entri pekerjaan:
+        # Role/Jabatan (misal: "Sous Chef")
+        # Periode (misal: "Jul 2010") -- atau rentang
+        # CompanyName, City, State
+        # Deskripsi (beberapa baris setelahnya)
+        
+        job_entry_pattern = re.compile(
+            r'([A-Za-z\s.,\-&\/\(\)]+\s*(?:II|III|IV)?)\n'  # Group 1: Role (e.g., "Sous Chef", "Front Desk Agent", "Front Desk Manager")
+            r'((?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s*\d{4}(?:\s*to\s*(?:Current|(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s*\d{4}))?)\n' # Group 2: Period (e.g., "Jul 2010", "Jan 2013 to Jan 2014")
+            r'([A-Za-z\s.,\-&\/\(\)]+?)\n' # Group 3: Company Name (e.g., "CompanyName", "Stratford University")
+            r'([\s\S]*?)(?=\n(?:[A-Z][a-z\s.,\-&\/\(\)]+\s*\d{4})|' # Description (Group 4) until next job entry pattern (Role Year)
+            r'^(?:Education|Skills|Accomplishments|Summary|Certifications):?|$)', # or until new section header or end of string
+            re.MULTILINE | re.IGNORECASE
+        )
+        
+        job_entries = job_entry_pattern.finditer(job_text)
+        
+        for match in job_entries:
+            role = match.group(1).strip()
+            period = match.group(2).strip()
+            company = match.group(3).strip()
+            description_raw = match.group(4).strip()
+            
+            # Bersihkan deskripsi dari dan bullet points/leading spaces
+            description_cleaned = re.sub(r'\|\n\s*\*?\s*', ' ', description_raw).strip()
+            
+            extracted_jobs.append({
+                "role": role,
+                "period": period,
+                "company": company,
+                "description": description_cleaned
+            })
+    return extracted_jobs
 
-def _extract_dates(text: str) -> list[str]:
-    """Extracts common date formats from text (e.g., MM/DD/YYYY, DD-MM-YYYY, Month YYYY)."""
-    # Regex for various date formats: MM/DD/YYYY, DD-MM-YYYY, YYYY-MM-DD, Month YYYY, MM YYYY
-    date_pattern = r'\b(?:\d{1,2}[-/]\d{1,2}[-/]\d{2,4}|\d{2,4}[-/]\d{1,2}[-/]\d{1,2}|(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]* \d{4}|\d{1,2} (?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]* \d{4})\b'
-    return list(set(re.findall(date_pattern, text, re.IGNORECASE)))
 
 def _extract_education(text: str) -> list[dict]:
     """
-    Extracts potential education entries. This is complex and often needs
-    more advanced NLP, but regex can get basic patterns.
+    Ekstraksi bagian Education.
+    Mencari Jurusan Kuliah, Institusi, dan Periode Waktu.
     """
-    education_patterns = [
-        # Degree and institution, optional year range
-        r'(?:B\.?S\.?|M\.?S\.?|Ph\.?D\.?|Bachelor|Master|Doctor) in ([A-Za-z\s.,\-&]+?) from ([A-Za-z\s.,\-&]+?)(?:\s+\(?(\d{4}[-–]\d{4}|\d{4})\)?)?',
-        # Institution, Degree, optional year
-        r'([A-Za-z\s.,\-&]+?),\s*(?:B\.?S\.?|M\.?S\.?|Ph\.?D\.?|Bachelor|Master|Doctor) in ([A-Za-z\s.,\-&]+?)(?:\s+\(?(\d{4}[-–]\d{4}|\d{4})\)?)?',
-        # Diploma/Certificate, field, institution, optional year
-        r'(?:Diploma|Certificate) in ([A-Za-z\s.,\-&]+?) from ([A-Za-z\s.,\-&]+?)(?:\s+\(?(\d{4}[-–]\d{4}|\d{4})\)?)?'
-    ]
+    education_section_match = re.search(
+        r'education:?\s*(.*?)(?:skills:|experience:|job history:|accomplishments:|summary:|$)',
+        text, re.IGNORECASE | re.DOTALL
+    )
     
     extracted_education = []
-    for pattern in education_patterns:
-        matches = re.findall(pattern, text, re.IGNORECASE)
-        for match in matches:
-            # Depending on pattern, match group order might change.
-            # This is a simplified approach, often needs more specific pattern handling
-            # or Named Groups in regex.
-            if len(match) == 3:
-                degree_or_field = match[0].strip()
-                institution = match[1].strip()
-                year = match[2].strip() if match[2] else None
-                extracted_education.append({
-                    "degree_or_field": degree_or_field,
-                    "institution": institution,
-                    "years": year
-                })
-            elif len(match) == 2: # For patterns without explicit degree/field first
-                 extracted_education.append({
-                    "degree_or_field": match[0].strip(),
-                    "institution": match[1].strip(),
-                    "years": None
-                })
+    if education_section_match:
+        edu_text = education_section_match.group(1).strip()
+        
+        # Pola berdasarkan contoh PDF:
+        # Degree/Major, Institution [City, State] GPA: GPA: 3.8 Magna Cum Lade Business AdministrationGPA: 3.8 Magna Cum Lade
+        # Bachelors of Arts , Hospitality Management 2013 Stratford University , City , State, USA
+        # Associate of Applied Science, Advanced Culinary Arts 2010 Stratford , City , State, USA
+        
+        edu_entry_pattern = re.compile(
+            r'([A-Za-z\s.,\-&:]+?)\s*(?:\d{4})?\s*' # Group 1: Degree/Major (e.g., Master's , Business Administration)
+            r'([A-Za-z\s.,\-&]+?)\s+' # Group 2: Institution (e.g., Stratford University)
+            r'(?:[A-Za-z\s,]+(?:GPA:.*?)?)?' # Optional City, State, GPA, other junk
+            r'(\d{4}(?:[-–]\d{4})?)?', # Group 3: Optional Year or Year Range (e.g., 2015, 2010-2014)
+            re.IGNORECASE | re.MULTILINE
+        )
+        
+        edu_entries = edu_entry_pattern.finditer(edu_text)
+        
+        for match in edu_entries:
+            major_field = match.group(1).strip()
+            institution = match.group(2).strip()
+            period = match.group(3).strip() if match.group(3) else "" # Period could be empty
+
+            extracted_education.append({
+                "major_field": major_field,
+                "institution": institution,
+                "period": period
+            })
     return extracted_education
 
 
 # --- Main Parsing Function with Extraction ---
 
-def parse_pdf_to_text(pdf_path: str) -> str | None:
+def parse_pdf_to_text(pdf_path: str = None, text_content: str = None) -> str | None: # Tambahkan default None
     """
     Extracts and normalizes text content from a PDF file.
     This is the original function. For structured info, use parse_pdf_to_text_and_extract_info.
     """
-    raw_text = extract_text_from_pdf_raw(pdf_path)
+    raw_text = None
+    if pdf_path:
+        raw_text = extract_text_from_pdf_raw(pdf_path)
+    elif text_content: # Gunakan text_content jika disediakan
+        raw_text = text_content
+    
     if raw_text is None:
         return None
-
     processed_text = combine_and_normalize_text(raw_text)
     return processed_text
 
-def parse_pdf_to_text_and_extract_info(pdf_path: str) -> dict:
+def parse_pdf_to_text_and_extract_info(pdf_path: str = None, text_content: str = None) -> dict: # Tambahkan default None
     """
-    Extracts raw text from PDF, normalizes it, and extracts structured information
-    using Regular Expressions.
+    Extracts raw text from PDF (or uses provided text_content), normalizes it,
+    and extracts structured information using Regular Expressions.
+
+    Args:
+        pdf_path (str, optional): Path to the PDF file.
+        text_content (str, optional): Raw text content directly provided.
+                                      If pdf_path is None, this will be used.
 
     Returns:
         dict: A dictionary containing:
             'full_text_raw': The raw extracted text.
             'full_text_normalized': The normalized (lowercase, single-space) text.
-            'emails': List of extracted email addresses.
             'phone_numbers': List of extracted phone numbers.
-            'urls': List of extracted URLs.
-            'dates': List of extracted dates.
+            'skills': List of extracted skills (strings).
+            'job_history': List of dictionaries for job history entries.
             'education': List of dictionaries for education entries.
-            # Add more fields as you implement more extraction functions
     """
-    raw_text = extract_text_from_pdf_raw(pdf_path)
+    raw_text = None
+    if pdf_path:
+        raw_text = extract_text_from_pdf_raw(pdf_path)
+    elif text_content:
+        raw_text = text_content
     
     extracted_data = {
         "full_text_raw": raw_text if raw_text else "",
         "full_text_normalized": combine_and_normalize_text(raw_text) if raw_text else "",
-        "emails": [],
         "phone_numbers": [],
-        "urls": [],
-        "dates": [],
+        "skills": [],
+        "job_history": [],
         "education": []
-        # Initialize other fields you want to extract
     }
 
     if raw_text:
-        # Perform Regex extractions on the raw text
-        extracted_data["emails"] = _extract_emails(raw_text)
         extracted_data["phone_numbers"] = _extract_phone_numbers(raw_text)
-        extracted_data["urls"] = _extract_urls(raw_text)
-        extracted_data["dates"] = _extract_dates(raw_text)
+        extracted_data["skills"] = _extract_skills(raw_text)
+        extracted_data["job_history"] = _extract_job_history(raw_text)
         extracted_data["education"] = _extract_education(raw_text)
-        # Call other extraction functions here
     
     return extracted_data
 

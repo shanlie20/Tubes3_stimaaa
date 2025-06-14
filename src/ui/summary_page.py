@@ -7,7 +7,8 @@ from PySide6.QtWidgets import (
     QPushButton,
     QFrame,
     QScrollArea,
-    QSizePolicy
+    QSizePolicy,
+    QGridLayout # Perlu ini lagi untuk layout job/edu detail
 )
 from src.core.summary import get_candidate_summary
 
@@ -26,10 +27,9 @@ class SummaryPage(QWidget):
         root.setContentsMargins(24, 24, 24, 24)
         root.setSpacing(16)
 
-        # Set background color for the entire page and global styles
         self.setStyleSheet("""
             SummaryPage {
-                background-color: #f0f0f0; /* Latar belakang abu-abu terang halaman */
+                background-color: #f0f0f0;
             }
             QLabel#h1 {
                 font-size: 20pt;
@@ -45,51 +45,62 @@ class SummaryPage(QWidget):
                 font-size: 14pt;
                 font-weight: bold;
                 color: black;
-                margin-top: 15px; /* Add some space above section headers */
+                margin-top: 15px;
             }
             QPushButton {
                 padding: 8px 15px;
                 border-radius: 5px;
-                border: 1px solid #ccc; /* Border sedikit terlihat */
-                background-color: white; /* Tombol putih */
+                border: 1px solid #ccc;
+                background-color: white;
                 color: black;
             }
             QPushButton:hover {
-                background-color: #e0e0e0; /* Latar belakang abu-abu saat kursor di atas */
+                background-color: #e0e0e0;
             }
-            /* Styling for the section wrapper frames */
-            QFrame#SectionFrame { /* Menggunakan ID Selector untuk QFrame */
-                background-color: #e6e6e6; /* Sedikit lebih gelap dari background halaman */
-                border: none; /* Hilangkan border */
-                border-radius: 8px; /* Sudut membulat */
-                /* Padding sudah diatur di _create_section_wrapper, tidak di sini */
+            QFrame#SectionFrame {
+                background-color: #e6e6e6;
+                border: none;
+                border-radius: 8px;
             }
-            /* Styling for labels inside the gray frames */
-            QFrame#SectionFrame QLabel { /* Ini akan berlaku untuk semua QLabel di dalam QFrame dengan ID SectionFrame */
-                color: black; /* Pastikan teks berwarna hitam */
+            QFrame#SectionFrame QLabel {
+                color: black;
             }
-            QLabel.info_text { /* Kelas khusus untuk teks info agar sedikit lebih kecil */
+            QLabel.info_text {
                 font-size: 10pt;
-                color: #333; /* Warna teks lebih gelap untuk info */
+                color: #333;
             }
             QLabel.sub_period_text {
                 font-size: 10pt;
                 color: #555;
             }
-            QLabel#skill_tag { /* Menggunakan ID Selector untuk skill tag */
-                background-color: #d3d3d3; /* Warna tag skill sesuai gambar (agak gelap) */
-                color: black; /* Warna teks tag skill sesuai gambar */
+            QLabel#skill_tag {
+                background-color: #d3d3d3;
+                color: black;
                 padding: 4px 8px;
-                border-radius: 5px; /* Sedikit membulat */
+                border-radius: 5px;
                 font-size: 10pt;
             }
             QLabel.description_text {
                 font-size: 10pt;
                 color: #333;
             }
+            QLabel.section_item_header { /* Gaya untuk role/degree di dalam section item */
+                font-weight: bold;
+                font-size: 10pt;
+                color: #222;
+            }
+            QLabel.section_item_detail { /* Gaya untuk detail seperti company, period */
+                font-size: 9pt;
+                color: #555;
+            }
+            QLabel.section_item_description { /* Gaya untuk deskripsi multi-baris */
+                font-size: 9pt;
+                color: #444;
+                margin-left: 10px; /* Indentasi untuk deskripsi */
+                margin-top: 5px;
+            }
         """)
 
-        # Back button
         back_btn_layout = QHBoxLayout()
         back_btn = QPushButton("← Back to Search")
         back_btn.clicked.connect(self.back_requested.emit)
@@ -98,69 +109,58 @@ class SummaryPage(QWidget):
         back_btn_layout.addStretch(1)
         root.addLayout(back_btn_layout)
 
-        # Page title
         title_lbl = QLabel("CV Summary")
         title_lbl.setObjectName("h1")
         title_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
         root.addWidget(title_lbl)
 
-        # Scroll area for the content
         scroll_area = QScrollArea()
         scroll_area.setWidgetResizable(True)
         scroll_area.setFrameShape(QFrame.Shape.NoFrame)
 
-        # Content widget
         content_widget = QWidget()
-        content_layout = QVBoxLayout(content_widget)
-        content_layout.setSpacing(10) # Reduced spacing between sections for tighter boxes
+        self.content_layout = QVBoxLayout(content_widget) # Jadikan self.content_layout
+        self.content_layout.setSpacing(10)
 
-        # Personal Information Section
-        self._create_personal_info_section(content_layout)
+        self._create_personal_info_section(self.content_layout)
+        self._create_skills_section(self.content_layout)
+        # self._create_job_history_section(self.content_layout) # Ini akan diganti dengan _add_job_history_entry
+        # self._create_education_section(self.content_layout) # Ini akan diganti dengan _add_education_entry
 
-        # Skills Section
-        self._create_skills_section(content_layout)
+        self.job_history_section_layout = None # Akan diinisialisasi di _create_job_history_section_base
+        self.education_section_layout = None # Akan diinisialisasi di _create_education_section_base
 
-        # Job History Section
-        self._create_job_history_section(content_layout)
+        # Tambahkan layout dasar untuk Job History dan Education sekali
+        self._create_job_history_section_base(self.content_layout)
+        self._create_education_section_base(self.content_layout)
 
-        # Education Section
-        self._create_education_section(content_layout)
-
-        content_layout.addStretch(1)
+        self.content_layout.addStretch(1)
 
         scroll_area.setWidget(content_widget)
         root.addWidget(scroll_area, 1)
 
     def _create_section_wrapper(self, parent_layout, has_header: bool = True):
-        """Creates a common wrapper for each section (personal info, skills, job, education)."""
         section_wrapper_frame = QFrame()
-        section_wrapper_frame.setObjectName("SectionFrame") # Using ID Selector for styling
+        section_wrapper_frame.setObjectName("SectionFrame")
 
         section_layout = QVBoxLayout(section_wrapper_frame)
-        # Padding di dalam frame untuk content
         section_layout.setContentsMargins(20, 15, 20, 15)
-        section_layout.setSpacing(5) # Spacing antar item di dalam section
+        section_layout.setSpacing(5)
 
-        # Adding the frame to the parent layout
         parent_layout.addWidget(section_wrapper_frame)
         return section_layout, section_wrapper_frame
 
     def _create_personal_info_section(self, parent_layout):
-        """Create personal information section with candidate details"""
-        # Candidate name (main header for this section)
-        self.name_lbl = QLabel("Gantar Puspasari") # Placeholder
+        self.name_lbl = QLabel("Gantar Puspasari")
         self.name_lbl.setObjectName("h2")
         parent_layout.addWidget(self.name_lbl)
 
-        # Use the new section wrapper
         info_section_layout, _ = self._create_section_wrapper(parent_layout, has_header=False)
 
-        # Personal info labels
         self.birthdate_lbl = QLabel("Birthdate: -")
         self.address_lbl = QLabel("Address: -")
         self.phone_lbl = QLabel("Phone: -")
 
-        # Set object name for styling
         self.birthdate_lbl.setObjectName("info_text")
         self.address_lbl.setObjectName("info_text")
         self.phone_lbl.setObjectName("info_text")
@@ -170,7 +170,6 @@ class SummaryPage(QWidget):
         info_section_layout.addWidget(self.phone_lbl)
 
     def _create_skills_section(self, parent_layout):
-        """Create skills section"""
         skills_lbl = QLabel("Skills:")
         skills_lbl.setObjectName("section_header")
         parent_layout.addWidget(skills_lbl)
@@ -184,72 +183,91 @@ class SummaryPage(QWidget):
         self.skills_layout.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
 
         skills_section_layout.addWidget(self.skills_container)
-        # No vertical stretch here, the wrapper's layout handles it implicitly via padding
 
-    def _create_job_history_section(self, parent_layout):
-        """Create job history section"""
+    # --- Base sections for Job History and Education ---
+    def _create_job_history_section_base(self, parent_layout):
         job_history_lbl = QLabel("Job History:")
         job_history_lbl.setObjectName("section_header")
         parent_layout.addWidget(job_history_lbl)
 
-        job_section_layout, _ = self._create_section_wrapper(parent_layout)
+        job_history_wrapper_layout, _ = self._create_section_wrapper(parent_layout)
+        self.job_history_section_layout = QVBoxLayout() # This will hold individual job entries
+        self.job_history_section_layout.setContentsMargins(0,0,0,0)
+        self.job_history_section_layout.setSpacing(10) # Spacing between job entries
+        job_history_wrapper_layout.addLayout(self.job_history_section_layout)
 
-        # Role and Period on one line (or styled to look like it)
-        role_period_layout = QHBoxLayout()
-        self.job_role_lbl = QLabel("ACCOUNTANT") # Placeholder
-        self.job_role_lbl.setStyleSheet("font-weight: bold;")
-        self.job_role_lbl.setObjectName("info_text")
-
-        self.job_period_lbl = QLabel("2003-2004") # Placeholder
-        self.job_period_lbl.setObjectName("sub_period_text")
-
-        role_period_layout.addWidget(self.job_role_lbl)
-        role_period_layout.addWidget(self.job_period_lbl)
-        role_period_layout.addStretch(1)
-
-        job_section_layout.addLayout(role_period_layout)
-
-        # Description on a new line
-        self.job_description_lbl = QLabel("Leading the organization's technology strategies") # Placeholder
-        self.job_description_lbl.setObjectName("description_text")
-        job_section_layout.addWidget(self.job_description_lbl)
-
-    def _create_education_section(self, parent_layout):
-        """Create education section"""
+    def _create_education_section_base(self, parent_layout):
         education_lbl = QLabel("Education:")
         education_lbl.setObjectName("section_header")
         parent_layout.addWidget(education_lbl)
 
-        edu_section_layout, _ = self._create_section_wrapper(parent_layout)
+        education_wrapper_layout, _ = self._create_section_wrapper(parent_layout)
+        self.education_section_layout = QVBoxLayout() # This will hold individual education entries
+        self.education_section_layout.setContentsMargins(0,0,0,0)
+        self.education_section_layout.setSpacing(10) # Spacing between education entries
+        education_wrapper_layout.addLayout(self.education_section_layout)
 
-        # Degree and Institution on one line, period on another
-        degree_inst_layout = QHBoxLayout()
-        self.edu_degree_lbl = QLabel("Informatics Engineering") # Placeholder
-        self.edu_degree_lbl.setStyleSheet("font-weight: bold;")
-        self.edu_degree_lbl.setObjectName("info_text")
+    # --- Methods to add individual entries (called dynamically) ---
+    def _add_job_history_entry(self, role: str, period: str, company: str, description: str):
+        entry_widget = QWidget()
+        entry_layout = QVBoxLayout(entry_widget)
+        entry_layout.setContentsMargins(0,0,0,0)
+        entry_layout.setSpacing(2)
 
-        self.edu_institution_lbl = QLabel("(Institut Teknologi Bandung)") # Placeholder
-        self.edu_institution_lbl.setObjectName("sub_period_text")
+        role_company_period_layout = QHBoxLayout()
+        role_lbl = QLabel(role)
+        role_lbl.setObjectName("section_item_header")
+        
+        company_period_lbl = QLabel(f"{company} ({period})")
+        company_period_lbl.setObjectName("section_item_detail")
 
-        degree_inst_layout.addWidget(self.edu_degree_lbl)
-        degree_inst_layout.addWidget(self.edu_institution_lbl)
-        degree_inst_layout.addStretch(1)
+        role_company_period_layout.addWidget(role_lbl)
+        role_company_period_layout.addSpacing(5) # Spasi antara role dan company/period
+        role_company_period_layout.addWidget(company_period_lbl)
+        role_company_period_layout.addStretch(1)
+        entry_layout.addLayout(role_company_period_layout)
+        
+        if description:
+            desc_lbl = QLabel(description)
+            desc_lbl.setObjectName("section_item_description")
+            desc_lbl.setWordWrap(True)
+            entry_layout.addWidget(desc_lbl)
+        
+        self.job_history_section_layout.addWidget(entry_widget)
 
-        edu_section_layout.addLayout(degree_inst_layout)
+    def _add_education_entry(self, major_field: str, institution: str, period: str):
+        entry_widget = QWidget()
+        entry_layout = QVBoxLayout(entry_widget)
+        entry_layout.setContentsMargins(0,0,0,0)
+        entry_layout.setSpacing(2)
 
-        self.edu_period_lbl = QLabel("2022-2026") # Placeholder
-        self.edu_period_lbl.setObjectName("sub_period_text")
-        edu_section_layout.addWidget(self.edu_period_lbl)
+        major_inst_layout = QHBoxLayout()
+        major_lbl = QLabel(major_field)
+        major_lbl.setObjectName("section_item_header")
+        
+        institution_lbl = QLabel(f"({institution})")
+        institution_lbl.setObjectName("section_item_detail")
+
+        major_inst_layout.addWidget(major_lbl)
+        major_inst_layout.addSpacing(5)
+        major_inst_layout.addWidget(institution_lbl)
+        major_inst_layout.addStretch(1)
+        entry_layout.addLayout(major_inst_layout)
+        
+        if period:
+            period_lbl = QLabel(period)
+            period_lbl.setObjectName("section_item_detail")
+            entry_layout.addWidget(period_lbl)
+            
+        self.education_section_layout.addWidget(entry_widget)
 
     def _create_skill_tag(self, skill_name):
-        """Create a skill tag widget"""
         skill_tag = QLabel(skill_name)
-        skill_tag.setObjectName("skill_tag") # Use ID Selector for styling
+        skill_tag.setObjectName("skill_tag")
         skill_tag.setAlignment(Qt.AlignmentFlag.AlignCenter)
         return skill_tag
 
     def _clear_skills(self):
-        """Clear existing skill tags"""
         for i in reversed(range(self.skills_layout.count())):
             item = self.skills_layout.itemAt(i)
             if item.widget():
@@ -258,11 +276,39 @@ class SummaryPage(QWidget):
                 self.skills_layout.removeItem(item)
         self.skills_layout.addStretch(1)
 
+    def _clear_job_history_entries(self):
+        if self.job_history_section_layout:
+            while self.job_history_section_layout.count():
+                item = self.job_history_section_layout.takeAt(0)
+                if item.widget():
+                    item.widget().deleteLater()
+                elif item.layout():
+                    # Clear nested layouts if any, though _add_job_history_entry adds widgets directly
+                    self._clear_layout(item.layout())
+        
+    def _clear_education_entries(self):
+        if self.education_section_layout:
+            while self.education_section_layout.count():
+                item = self.education_section_layout.takeAt(0)
+                if item.widget():
+                    item.widget().deleteLater()
+                elif item.layout():
+                    self._clear_layout(item.layout()) # Just in case
+
+    def _clear_layout(self, layout):
+        if layout is not None:
+            while layout.count():
+                item = layout.takeAt(0)
+                if item.widget() is not None:
+                    item.widget().deleteLater()
+                elif item.layout() is not None:
+                    self._clear_layout(item.layout())
+
+
     # ------------------------------------------------------------------
     # Public API
     # ------------------------------------------------------------------
     def load_candidate(self, applicant_id: int):
-        """Load candidate details from database using applicant_id."""
         self.current_applicant_id = applicant_id
 
         candidate_data = get_candidate_summary(applicant_id)
@@ -272,12 +318,9 @@ class SummaryPage(QWidget):
             self.birthdate_lbl.setText("Birthdate: -")
             self.address_lbl.setText("Address: -")
             self.phone_lbl.setText("Phone: -")
-            self.job_role_lbl.setText("Role: -")
-            self.job_period_lbl.setText("Period: -")
-            self.job_description_lbl.setText("Description: -")
-            self.edu_degree_lbl.setText("Degree: -")
-            self.edu_institution_lbl.setText("Institution: -")
-            self.edu_period_lbl.setText("Period: -")
+            # Clear job history and education sections
+            self._clear_job_history_entries()
+            self._clear_education_entries()
             self._clear_skills()
             return
 
@@ -296,19 +339,45 @@ class SummaryPage(QWidget):
         self.address_lbl.setText(f"Address: {candidate_data.get('address', '-')}")
         self.phone_lbl.setText(f"Phone: {candidate_data.get('phone_number', '-')}")
 
-        role = candidate_data.get('role', '-')
-        self.job_role_lbl.setText(role or "-")
-        self.job_period_lbl.setText(candidate_data.get('job_period', '2003-2004'))
-        self.job_description_lbl.setText(candidate_data.get('job_description', 'Leading the organization\'s technology strategies'))
-
+        # Update skills
         self._clear_skills()
-        actual_skills = candidate_data.get('skills', [])
-        if not actual_skills:
-             actual_skills = ["React", "Express", "HTML"]
-        for skill in actual_skills:
+        skills = candidate_data.get('skills', []) # Mengambil list of strings dari summary
+        if not skills:
+             skills = ["No Skills Found"] # Default jika kosong
+        for skill in skills:
             skill_tag = self._create_skill_tag(skill)
-            self.skills_layout.insertWidget(self.skills_layout.count() - 1, skill_tag)
+            if skill_tag:
+                self.skills_layout.insertWidget(self.skills_layout.count() - 1, skill_tag)
 
-        self.edu_degree_lbl.setText(candidate_data.get('edu_degree', 'Informatics Engineering'))
-        self.edu_institution_lbl.setText(f"({candidate_data.get('edu_institution', 'Institut Teknologi Bandung')})")
-        self.edu_period_lbl.setText(candidate_data.get('edu_period', '2022-2026'))
+        # Update Job History
+        self._clear_job_history_entries() # Bersihkan entri lama
+        job_history = candidate_data.get('job_history', []) # Mengambil list of dicts dari summary
+        if not job_history:
+            # Tampilkan pesan jika tidak ada job history
+            no_job_lbl = QLabel("No job history extracted.")
+            no_job_lbl.setObjectName("description_text")
+            self.job_history_section_layout.addWidget(no_job_lbl)
+        else:
+            for job in job_history:
+                self._add_job_history_entry(
+                    role=job.get('role', '-'),
+                    period=job.get('period', '-'),
+                    company=job.get('company', '-'),
+                    description=job.get('description', '')
+                )
+        
+        # Update Education
+        self._clear_education_entries() # Bersihkan entri lama
+        education = candidate_data.get('education', []) # Mengambil list of dicts dari summary
+        if not education:
+            # Tampilkan pesan jika tidak ada education
+            no_edu_lbl = QLabel("No education extracted.")
+            no_edu_lbl.setObjectName("description_text")
+            self.education_section_layout.addWidget(no_edu_lbl)
+        else:
+            for edu in education:
+                self._add_education_entry(
+                    major_field=edu.get('major_field', '-'),
+                    institution=edu.get('institution', '-'),
+                    period=edu.get('period', '')
+                )
