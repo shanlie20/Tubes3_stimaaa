@@ -9,6 +9,10 @@ from .boyer_moore import boyer_moore_search
 from .pdf_parser import parse_pdf_to_text  # Assumed to exist for PDF extraction
 from src.db.models import ApplicantProfile, ApplicationDetail  # Importing models
 from src.db.seeder import PROJECT_ROOT
+from .summary import get_candidate_summary  # Importing summary function
+
+# untuk testing saja
+from itertools import islice
 
 
 def normalize_text(text: str) -> str:
@@ -40,7 +44,9 @@ def perform_search(keywords: List[str], selected_algorithm: str, top_n: int) -> 
 
         applicant_matches = []  # Stores candidate match results
         total_cv_scan = len(applicants)  # Total CVs processed
-        for applicant_profile, application in applicants:
+
+        for applicant_profile, application in islice(applicants, 10):
+        # for applicant_profile, application in applicants:
             cv_path = application.cv_path # CV file path
             applicant_id = applicant_profile.applicant_id
             first_name = applicant_profile.first_name
@@ -72,19 +78,10 @@ def perform_search(keywords: List[str], selected_algorithm: str, top_n: int) -> 
 
                 # Selected matching algorithm
                 if selected_algorithm == "KMP":
-                    kmp_results = kmp_search(normalized_cv_content, normalized_keyword)
-                    current_keyword_occurrences = len(kmp_results) if isinstance(kmp_results, list) else kmp_results
+                    current_keyword_occurrences = kmp_search(normalized_cv_content, normalized_keyword)
 
                 elif selected_algorithm == "Boyer-Moore":
-                    bm_results = boyer_moore_search(normalized_cv_content, normalized_keyword)
-                    # FIX: Handle boyer_moore_search returning a tuple
-                    if isinstance(bm_results, tuple):
-                        # Assuming the count is the first element of the tuple, or it's a tuple of (count,)
-                        current_keyword_occurrences = bm_results[0] if bm_results else 0
-                    elif isinstance(bm_results, list):
-                        current_keyword_occurrences = len(bm_results)
-                    else: # Assume it's already an int
-                        current_keyword_occurrences = bm_results
+                    current_keyword_occurrences = boyer_moore_search(normalized_cv_content, normalized_keyword)
                     # print("current_keyword_occurrences (Boyer-Moore):", current_keyword_occurrences)  # Debugging output
 
                 elif selected_algorithm == "Aho-Corasick":
