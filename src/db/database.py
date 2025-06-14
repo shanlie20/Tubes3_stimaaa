@@ -7,11 +7,11 @@ from dotenv import load_dotenv
 from .models import Base 
 
 load_dotenv() 
-DB_USER = os.getenv("DB_USER", "root")
-DB_PASSWORD = os.getenv("DB_PASSWORD", "yukk8.") 
-DB_HOST = os.getenv("DB_HOST", "localhost")
-DB_PORT = os.getenv("DB_PORT", "3307") 
-DB_NAME = os.getenv("DB_NAME", "ats_db") 
+DB_USER = os.getenv("DB_USER")
+DB_PASSWORD = os.getenv("DB_PASSWORD") 
+DB_HOST = os.getenv("DB_HOST")
+DB_PORT = os.getenv("DB_PORT") 
+DB_NAME = os.getenv("DB_NAME") 
 SERVER_ENGINE_URL = f"mysql+mysqlconnector://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}"
 DATABASE_URL = f"{SERVER_ENGINE_URL}/{DB_NAME}"
 engine = None 
@@ -48,9 +48,9 @@ def ensure_database_exists_and_recreate_if_needed(drop_if_exists: bool = False):
 
 def create_tables_in_db():
     try:
-        if engine is None: # Pastikan engine sudah terinisialisasi
+        if engine is None:
             initialize_engine_and_session()
-            if engine is None: # Jika masih None setelah coba inisialisasi
+            if engine is None: 
                  print("FATAL: Engine utama tidak bisa diinisialisasi. Tidak bisa membuat tabel.")
                  return
         Base.metadata.create_all(bind=engine)
