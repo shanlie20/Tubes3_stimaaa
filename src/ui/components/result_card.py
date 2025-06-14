@@ -81,9 +81,22 @@ class ResultCard(QFrame):
                 border: 1px solid #ccc;
                 border-radius: 8px;
             }
+            QFrame#resultCard QLabel, QFrame#resultCard QPushButton {
+                color: black;
+            }
             QLabel#h3 {
                 font-size: 14pt;
                 font-weight: bold;
+            }
+            QFrame#resultCard QPushButton {
+                color: black;              
+                background-color: white;   
+                border: 1px solid black;   
+                padding: 5px 10px;         
+                border-radius: 4px;        
+            }
+            QFrame#resultCard QPushButton:hover {
+                background-color: #f0f0f0;  /* Latar belakang abu-abu saat kursor di atas */
             }
             """
         )
