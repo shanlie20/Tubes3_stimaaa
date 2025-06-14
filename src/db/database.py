@@ -1,3 +1,4 @@
+
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker, Session
 from contextlib import contextmanager
@@ -7,7 +8,7 @@ from .models import Base
 
 load_dotenv() 
 DB_USER = os.getenv("DB_USER", "root")
-DB_PASSWORD = os.getenv("DB_PASSWORD", "password_mysql_anda") 
+DB_PASSWORD = os.getenv("DB_PASSWORD", "B1smillahlulus") 
 DB_HOST = os.getenv("DB_HOST", "localhost")
 DB_PORT = os.getenv("DB_PORT", "3306") 
 DB_NAME = os.getenv("DB_NAME", "ats_db") 

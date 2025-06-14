@@ -1,3 +1,4 @@
+
 from PySide6.QtWidgets import QMainWindow, QWidget, QStackedLayout
 from PySide6.QtCore import Qt
 

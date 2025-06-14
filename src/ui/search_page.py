@@ -1,4 +1,5 @@
 from functools import partial
+from src.core.search import perform_search
 
 from PySide6.QtCore import Signal, Qt
 from PySide6.QtWidgets import (
@@ -41,10 +42,20 @@ def perform_search(keywords: list[str], algorithm: str, top_n: int) -> tuple[lis
     # Asumsi: Anda memiliki daftar CV yang dapat diakses, misalnya dari database
     # atau dari folder tertentu. Untuk contoh ini, kita akan simulasikan
     # membaca beberapa CV dari file dummy.
-    
-    # NOTE: Anda perlu menyesuaikan bagian ini untuk membaca CV dari sumber nyata Anda
-    # seperti folder CV_data atau dari database.
-    
+# def perform_search(keywords: list[str], algorithm: str, top_n: int) -> tuple[list[dict], int, dict]:
+#     """
+#     Melakukan pencarian CV berdasarkan kata kunci menggunakan algoritma yang dipilih.
+#     Ini adalah placeholder yang perlu diperluas untuk membaca CV dari database atau folder.
+#     """
+#     results = []
+#     total_search_cv = 0
+#     timings = {"exact_ms": 0, "fuzzy_ms": 0}
+
+#     # Asumsi: Anda memiliki daftar CV yang dapat diakses, misalnya dari database
+#     # atau dari folder tertentu. Untuk contoh ini, kita akan simulasikan
+#     # membaca beberapa CV dari file dummy.  
+#     # NOTE: Anda perlu menyesuaikan bagian ini untuk membaca CV dari sumber nyata Anda
+#     # seperti folder CV_data atau dari database.
     # --- SIMULASI PEMBACAAN CV DUMMY ---
     dummy_cv_paths = [
         "core/cv1.pdf", # Pastikan path ini sesuai
@@ -80,21 +91,55 @@ def perform_search(keywords: list[str], algorithm: str, top_n: int) -> tuple[lis
     # --- LOGIKA PENCARIAN BERDASARKAN ALGORITMA ---
     search_start_time = start_timer()
     
-    candidate_matches = [] # Menyimpan {candidate_id, match_count, matched_keywords}
+#     # --- SIMULASI PEMBACAAN CV DUMMY ---
+#     dummy_cv_paths = [
+#         "core/cv1.pdf", # Pastikan path ini sesuai
+#         "core/cv2.pdf", # Contoh CV dummy
+#         "core/cv3.pdf",
+#         "core/cv4.pdf",
+#         "core/cv5.pdf",
+#         "core/cv6.pdf",
+#         "core/cv7.pdf",
+#         "core/cv8.pdf",
+#         "core/cv9.pdf",
+#         "core/cv10.pdf",
+#         "core/cv11.pdf",
+#         "core/cv12.pdf",
+#         # ... tambahkan path CV lainnya
+#     ]
+    
+#     all_cv_contents = []
+#     for i, cv_path in enumerate(dummy_cv_paths):
+#         try:
+#             # For demonstration, we'll use a dummy text if the file read fails
+#             cv_text = read_file_content(cv_path)
+#             if not cv_text:
+#                 cv_text = f"Ini adalah dummy CV {i+1} untuk pengujian. Di sini ada kata {'Python' if i%2 == 0 else 'JavaScript'} dan juga {'React' if i%3 == 0 else 'Java'}. Programmer, Developer."
 
-    for candidate_data in all_cv_contents:
-        cv_id = candidate_data["id"]
-        cv_name = candidate_data["name"]
-        cv_content = candidate_data["content"]
+#             all_cv_contents.append({"id": i + 1, "content": cv_text, "name": f"Applicant {i + 1}"})
+#         except Exception as e:
+#             print(f"Error processing CV {cv_path}: {e}")
+#             continue
+
+#     total_search_cv = len(all_cv_contents)
+
+#     # --- LOGIKA PENCARIAN BERDASARKAN ALGORITMA ---
+#     search_start_time = start_timer()
+#     candidate_matches = [] # Menyimpan {candidate_id, match_count, matched_keywords}
+
+#     for candidate_data in all_cv_contents:
+#         cv_id = candidate_data["id"]
+#         cv_name = candidate_data["name"]
+#         cv_content = candidate_data["content"]
         
-        normalized_cv_content = normalize_text(cv_content) # Normalisasi CV
-
+#         normalized_cv_content = normalize_text(cv_content) # Normalisasi CV
         current_match_count = 0
         current_matched_keywords = {} # Changed to dict to store counts per keyword
+#         current_match_count = 0
+#         current_matched_keywords = {} # Changed to dict to store counts per keyword
 
-        for keyword in keywords:
-            normalized_keyword = normalize_text(keyword) # Normalisasi keyword
-            
+#         for keyword in keywords:
+#             normalized_keyword = normalize_text(keyword) # Normalisasi keyword
             occurrences = []
             if algorithm == "KMP":
                 occurrences = kmp_search(normalized_cv_content, normalized_keyword)
@@ -133,7 +178,44 @@ def perform_search(keywords: list[str], algorithm: str, top_n: int) -> tuple[lis
     timings["fuzzy_ms"] = 0 # Placeholder if no separate fuzzy logic
 
     return results, total_search_cv, timings
+#             occurrences = []
+#             if algorithm == "KMP":
+#                 occurrences = kmp_search(normalized_cv_content, normalized_keyword)
+#             # elif algorithm == "Boyer-Moore":
+#             #     occurrences = boyer_moore_search(normalized_cv_content, normalized_keyword)
+#             # elif algorithm == "Aho-Corasick":
+#             #     # Aho-Corasick biasanya lebih efisien untuk mencari banyak pola sekaligus
+#             #     # Anda mungkin perlu menyesuaikan pemanggilan fungsi ini
+#             #     occurrences = aho_corasick_search(normalized_cv_content, normalized_keyword)
+#             else:
+#                 # Fallback untuk algoritma yang belum diimplementasikan
+#                 # Anda bisa menggunakan pencarian string bawaan Python
+#                 occurrences = [i for i in range(len(normalized_cv_content) - len(normalized_keyword) + 1)
+#                                if normalized_cv_content[i:i+len(normalized_keyword)] == normalized_keyword]
 
+#             if occurrences:
+#                 current_match_count += len(occurrences)
+#                 current_matched_keywords[keyword] = current_matched_keywords.get(keyword, 0) + len(occurrences)
+
+#         if current_match_count > 0:
+#             candidate_matches.append({
+#                 "name": cv_name,
+#                 "matched_keywords": current_matched_keywords, # Store as dict
+#                 "total_matches": current_match_count,
+#                 "applicant_id": cv_id,
+#                 "cv_content": cv_content # Include content for 'View CV'
+#             })
+    
+#     # Urutkan hasil berdasarkan match_count (tertinggi ke terendah) dan ambil top_n
+#     candidate_matches.sort(key=lambda x: x["total_matches"], reverse=True)
+#     results = candidate_matches[:top_n]
+    
+#     # Hitung waktu eksekusi
+#     total_search_time = stop_timer(search_start_time, f"Total {algorithm} Search")
+#     timings["exact_ms"] = total_search_time
+#     timings["fuzzy_ms"] = 0 # Placeholder if no separate fuzzy logic
+
+#     return results, total_search_cv, timings
 
 class SearchPage(QWidget):
     """Page that lets the recruiter search CVs by keyword."""
