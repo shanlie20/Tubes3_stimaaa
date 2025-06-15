@@ -215,7 +215,7 @@ class SearchPage(QWidget):
         algorithm_selection_layout.addStretch(1)
         top_label = QLabel("Top matches:")
         self.top_spin = QSpinBox()
-        self.top_spin.setRange(1, 480)
+        self.top_spin.setRange(1, 600)
         self.top_spin.setValue(8)
         algorithm_selection_layout.addWidget(top_label)
         algorithm_selection_layout.addWidget(self.top_spin)
