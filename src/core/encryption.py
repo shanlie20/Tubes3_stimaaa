@@ -62,12 +62,3 @@ def decrypt(ciphertext_hex) -> str:
     # Mengubah hasil dekripsi kembali menjadi string
     decrypted_message = int_to_string(decrypted_int)
     return decrypted_message
-
-# # Contoh penggunaan
-# message = "andrew ganteng 123+_+(&)"  # pesan dalam bentuk string
-# ciphertext_hex = encrypt(message)
-# decrypted_message = decrypt(ciphertext_hex)
-
-# print("Pesan asli:", message)
-# print("Ciphertext (heksadesimal):", ciphertext_hex)
-# print("Pesan terdekripsi:", decrypted_message)

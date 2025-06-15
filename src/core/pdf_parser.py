@@ -67,11 +67,6 @@ def _extract_skills(text: str) -> list[str]:
                 continue
             if s and len(s) > 1: # Pastikan bukan string kosong atau terlalu pendek
                 cleaned_skills.append(s)
-        
-        # Filter kata kunci yang terlalu umum atau tidak relevan jika perlu
-        # Contoh:
-        # common_junk = ["management", "services", "solutions"]
-        # cleaned_skills = [s for s in cleaned_skills if s.lower() not in common_junk]
 
         return list(set(cleaned_skills)) # Hapus duplikat
     return []
@@ -89,19 +84,12 @@ def _extract_job_history(text: str) -> list[dict]:
     extracted_jobs = []
     if job_history_section_match:
         job_text = job_history_section_match.group(1).strip()
-        
-        # Pola untuk setiap entri pekerjaan:
-        # Role/Jabatan (misal: "Sous Chef")
-        # Periode (misal: "Jul 2010") -- atau rentang
-        # CompanyName, City, State
-        # Deskripsi (beberapa baris setelahnya)
-        
         job_entry_pattern = re.compile(
-            r'([A-Za-z\s.,\-&\/\(\)]+\s*(?:II|III|IV)?)\n'  # Group 1: Role (e.g., "Sous Chef", "Front Desk Agent", "Front Desk Manager")
+            r'([A-Za-z\s.,\-&\/\(\)]+\s*(?:II|III|IV)?)\n'
             r'((?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s*\d{4}(?:\s*to\s*(?:Current|(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s*\d{4}))?)\n' # Group 2: Period (e.g., "Jul 2010", "Jan 2013 to Jan 2014")
-            r'([A-Za-z\s.,\-&\/\(\)]+?)\n' # Group 3: Company Name (e.g., "CompanyName", "Stratford University")
-            r'([\s\S]*?)(?=\n(?:[A-Z][a-z\s.,\-&\/\(\)]+\s*\d{4})|' # Description (Group 4) until next job entry pattern (Role Year)
-            r'^(?:Education|Skills|Accomplishments|Summary|Certifications):?|$)', # or until new section header or end of string
+            r'([A-Za-z\s.,\-&\/\(\)]+?)\n'
+            r'([\s\S]*?)(?=\n(?:[A-Z][a-z\s.,\-&\/\(\)]+\s*\d{4})|'
+            r'^(?:Education|Skills|Accomplishments|Summary|Certifications):?|$)',
             re.MULTILINE | re.IGNORECASE
         )
         
@@ -111,9 +99,7 @@ def _extract_job_history(text: str) -> list[dict]:
             role = match.group(1).strip()
             period = match.group(2).strip()
             company = match.group(3).strip()
-            description_raw = match.group(4).strip()
-            
-            # Bersihkan deskripsi dari dan bullet points/leading spaces
+            description_raw = match.group(4).strip()            
             description_cleaned = re.sub(r'\|\n\s*\*?\s*', ' ', description_raw).strip()
             
             extracted_jobs.append({
@@ -137,18 +123,12 @@ def _extract_education(text: str) -> list[dict]:
     
     extracted_education = []
     if education_section_match:
-        edu_text = education_section_match.group(1).strip()
-        
-        # Pola berdasarkan contoh PDF:
-        # Degree/Major, Institution [City, State] GPA: GPA: 3.8 Magna Cum Lade Business AdministrationGPA: 3.8 Magna Cum Lade
-        # Bachelors of Arts , Hospitality Management 2013 Stratford University , City , State, USA
-        # Associate of Applied Science, Advanced Culinary Arts 2010 Stratford , City , State, USA
-        
+        edu_text = education_section_match.group(1).strip()        
         edu_entry_pattern = re.compile(
-            r'([A-Za-z\s.,\-&:]+?)\s*(?:\d{4})?\s*' # Group 1: Degree/Major (e.g., Master's , Business Administration)
-            r'([A-Za-z\s.,\-&]+?)\s+' # Group 2: Institution (e.g., Stratford University)
-            r'(?:[A-Za-z\s,]+(?:GPA:.*?)?)?' # Optional City, State, GPA, other junk
-            r'(\d{4}(?:[-–]\d{4})?)?', # Group 3: Optional Year or Year Range (e.g., 2015, 2010-2014)
+            r'([A-Za-z\s.,\-&:]+?)\s*(?:\d{4})?\s*'
+            r'([A-Za-z\s.,\-&]+?)\s+'
+            r'(?:[A-Za-z\s,]+(?:GPA:.*?)?)?'
+            r'(\d{4}(?:[-–]\d{4})?)?',
             re.IGNORECASE | re.MULTILINE
         )
         
@@ -157,7 +137,7 @@ def _extract_education(text: str) -> list[dict]:
         for match in edu_entries:
             major_field = match.group(1).strip()
             institution = match.group(2).strip()
-            period = match.group(3).strip() if match.group(3) else "" # Period could be empty
+            period = match.group(3).strip() if match.group(3) else ""
 
             extracted_education.append({
                 "major_field": major_field,
@@ -166,10 +146,7 @@ def _extract_education(text: str) -> list[dict]:
             })
     return extracted_education
 
-
-# --- Main Parsing Function with Extraction ---
-
-def parse_pdf_to_text(pdf_path: str = None, text_content: str = None) -> str | None: # Tambahkan default None
+def parse_pdf_to_text(pdf_path: str = None, text_content: str = None) -> str | None:
     """
     Extracts and normalizes text content from a PDF file.
     This is the original function. For structured info, use parse_pdf_to_text_and_extract_info.

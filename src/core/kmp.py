@@ -16,7 +16,7 @@ def compute_lps_array(pattern: str) -> int:
     """
     m = len(pattern)
     lps = [0] * m
-    length = 0  # Panjang awalan terpanjang yang juga merupakan akhiran
+    length = 0
 
     i = 1
     while i < m:
@@ -49,15 +49,15 @@ def kmp_search(text: str, pattern: str) -> List[int]:
     m = len(pattern)
 
     if m == 0:
-        return [0] if n >= 0 else [] # Pola kosong ditemukan di indeks 0 jika teks ada
+        return [0] if n >= 0 else []
     if n == 0 or m > n:
-        return [] # Teks kosong atau pola lebih panjang dari teks
+        return []
 
     lps = compute_lps_array(pattern)
     occurrences = []
 
-    i = 0  # Indeks untuk teks
-    j = 0  # Indeks untuk pola
+    i = 0
+    j = 0
 
     while i < n:
         if pattern[j] == text[i]:
@@ -66,29 +66,13 @@ def kmp_search(text: str, pattern: str) -> List[int]:
 
         if j == m:
             occurrences.append(i - j)
-            j = lps[j - 1] # Geser pola menggunakan nilai LPS untuk mencari kemunculan berikutnya
+            j = lps[j - 1]
         elif i < n and pattern[j] != text[i]:
             if j != 0:
-                j = lps[j - 1] # Jangan cocokkan j karakter, cocokkan lps[j-1] karakter
+                j = lps[j - 1]
             else:
                 i += 1
 
     occurrences
     count_occurrences = len(occurrences)
     return count_occurrences
-
-# Contoh penggunaan:
-# from src.core.kmp import kmp_search
-#
-# # text_example = "ABABDABACDABABCABAB"
-# # pattern_example = "ABABCABAB"
-# # results = kmp_search(text_example, pattern_example)
-# # print(f"Occurrences at: {results}")
-#
-# # text_long = "ABCABCABCABCABCABC" * 1000
-# # pattern_long = "ABCABC"
-# # # start_time = time.perf_counter() # Bisa menggunakan timer.py di sini
-# # results_long = kmp_search(text_long, pattern_long)
-# # # end_time = time.perf_counter()
-# # # print(f"Long search took {(end_time - start_time) * 1000:.4f} ms")
-# # # print(f"Found {len(results_long)} times.")

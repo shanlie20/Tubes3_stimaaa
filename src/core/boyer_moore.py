@@ -1,67 +1,46 @@
-from typing import List, Tuple
+from typing import List
 
 def boyer_moore_search(text: str, pattern: str) -> int:
     """
-    Mencari semua kemunculan 'pattern' dalam 'text' menggunakan algoritma Boyer-Moore sederhana
-    dengan fokus pada Bad Character Rule dan 3 case utama.
-    
-    Mengembalikan tuple (list_posisi_kemunculan, ditemukan_atau_tidak).
+    Mencari semua kemunculan 'pattern' dalam 'text' menggunakan algoritma Boyer-Moore
+    (dengan Bad Character Rule sederhana), dan mengembalikan jumlah total kemunculannya.
 
     Args:
-        text (str): Teks tempat pencarian akan dilakukan.
-        pattern (str): Pola yang akan dicari.
+        text (str): Teks tempat pencarian dilakukan.
+        pattern (str): Pola yang dicari.
 
     Returns:
-        Tuple[List[int], bool]: (Daftar indeks kemunculan, True jika ditemukan, False jika tidak)
+        int: Jumlah kemunculan pattern dalam text.
     """
     n = len(text)
     m = len(pattern)
 
     if m == 0:
-        return ([0] if n >= 0 else [], True if n >= 0 else False)
+        return 1 if n >= 0 else 0
     if n == 0 or m > n:
-        return ([], False)
+        return 0
 
-    # Membuat tabel bad character: char -> posisi terakhir kemunculan di pola
-    bad_char = {}
-    for i, c in enumerate(pattern):
-        bad_char[c] = i
+    # Buat tabel last occurrence dari tiap karakter
+    bad_char = {c: i for i, c in enumerate(pattern)}
 
     occurrences = []
-    s = 0  # posisi pergeseran pola terhadap teks
+    s = 0
 
     while s <= n - m:
         j = m - 1
 
-        # Cocokkan pola dengan teks dari belakang ke depan
         while j >= 0 and pattern[j] == text[s + j]:
             j -= 1
 
         if j < 0:
-            # Pola ditemukan di posisi s
             occurrences.append(s)
-            # Geser pola sebanyak panjang pola agar tidak menghitung kemunculan yang overlap
-            s += m
+            s += m  # geser penuh untuk skip overlap
         else:
-            x = text[s + j]
-            last_occurrence = bad_char.get(x, -1)
+            last = bad_char.get(text[s + j], -1)
+            shift = max(1, j - last)
+            s += shift
 
-            if last_occurrence != -1:
-                # Case 1 dan Case 2
-                shift = j - last_occurrence
-                if shift > 0:
-                    # Case 1: geser pola agar karakter terakhir x di pola sejajar dengan teks
-                    s += shift
-                else:
-                    # Case 2: geser pola 1 langkah jika shift <= 0
-                    s += 1
-            else:
-                # Case 3: karakter x tidak ada di pola
-                s += j + 1  # geser pola melewati karakter mismatch
-
-    count_occurences = len(occurrences)
-    return count_occurences
-
+    return len(occurrences)
 
 # Contoh penggunaan:
 # if __name__ == "__main__":

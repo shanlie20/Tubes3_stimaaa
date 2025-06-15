@@ -1,7 +1,5 @@
 import os
-import time
 from functools import lru_cache
-import json # Pastikan ini tetap ada jika Anda menggunakan JSON di suatu tempat
 
 from src.utils.timer import start_timer, stop_timer
 from typing import List, Tuple, Dict
@@ -17,9 +15,7 @@ from .encryption import decrypt
 
 from src.core.pdf_parser import parse_pdf_to_text_and_extract_info
 
-
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
 
 def normalize_text(text: str) -> str:
     normalized = ''.join([char.lower() if char.isalnum() else ' ' for char in text])
@@ -47,7 +43,6 @@ def perform_search(keywords_tuple: Tuple[str, ...], selected_algorithm: str, top
             # Panggil decrypt() tetap ada sesuai permintaan Anda
             full_name = f"{decrypt(applicant_profile.first_name)} {decrypt(applicant_profile.last_name)}".strip()
 
-            # --- LOGIKA DIUBAH: SELALU PARSING, TIDAK ADA CACHING ---
             cv_content = ""
             extracted_skills = []
             extracted_job_history = []
@@ -125,41 +120,8 @@ def perform_search(keywords_tuple: Tuple[str, ...], selected_algorithm: str, top
                     "job_history": extracted_job_history,
                     "education": extracted_education
                 })
-        # try:
-        #     db.commit()
-        # except Exception as e:
-        #     db.rollback()
-        #     print(f"Error committing updated CV content/extracted info to database: {e}")
 
     applicant_matches.sort(key=lambda x: x["total_matches"], reverse=True)
     results = applicant_matches[:top_n]
     
     return results, total_cv_scan, timings
-       
-# #Contoh cara mengakses fungsi perform_search dan elemen-elementnya
-# if __name__ == "__main__":
-#     # Keywords dan algoritma yang dipilih
-#     keywords = ["accounting", "python", "data analysis", "machine learning", "USA"]
-#     selected_algorithm = "KMP"  # Ganti dengan "KMP", "Boyer-Moore", atau algoritma lain
-#     top_n = 100
-
-#     # Panggil fungsi pencarian
-#     results, total_cv_scan, timings = perform_search(keywords, selected_algorithm, top_n)
-
-#     # Menampilkan hasil pencarian
-#     print("\nResults:")
-#     for result in results:
-#         print(f"Applicant ID: {result['applicant_id']}, Name: {result['name']}, Matches: {result['total_matches']}")
-#         print(f"Matched Keywords: {result['matched_keywords']}")
-
-#     # Akses jumlah kemunculan untuk kata kunci tertentu (misalnya "Python")
-#     for result in results:
-#         print(f"\nFor {result['name']}:")
-#         for keyword in keywords:
-#             if keyword in result['matched_keywords']:
-#                 print(f"{keyword}: {result['matched_keywords'][keyword]} occurrences")
-#             else:
-#                 print(f"{keyword}: Not found")
-#     print("\nAlgorithm:", selected_algorithm)
-#     print("\nTotal CV Scanned:", total_cv_scan)
-#     print("Execution Time (exact match):", timings["exact_ms"], "ms")

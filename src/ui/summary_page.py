@@ -7,8 +7,7 @@ from PySide6.QtWidgets import (
     QPushButton,
     QFrame,
     QScrollArea,
-    QSizePolicy,
-    QGridLayout # Perlu ini lagi untuk layout job/edu detail
+    QSizePolicy
 )
 from src.core.summary import get_candidate_summary
 
@@ -119,18 +118,13 @@ class SummaryPage(QWidget):
         scroll_area.setFrameShape(QFrame.Shape.NoFrame)
 
         content_widget = QWidget()
-        self.content_layout = QVBoxLayout(content_widget) # Jadikan self.content_layout
+        self.content_layout = QVBoxLayout(content_widget)
         self.content_layout.setSpacing(10)
 
         self._create_personal_info_section(self.content_layout)
         self._create_skills_section(self.content_layout)
-        # self._create_job_history_section(self.content_layout) # Ini akan diganti dengan _add_job_history_entry
-        # self._create_education_section(self.content_layout) # Ini akan diganti dengan _add_education_entry
-
-        self.job_history_section_layout = None # Akan diinisialisasi di _create_job_history_section_base
-        self.education_section_layout = None # Akan diinisialisasi di _create_education_section_base
-
-        # Tambahkan layout dasar untuk Job History dan Education sekali
+        self.job_history_section_layout = None
+        self.education_section_layout = None
         self._create_job_history_section_base(self.content_layout)
         self._create_education_section_base(self.content_layout)
 
@@ -184,16 +178,16 @@ class SummaryPage(QWidget):
 
         skills_section_layout.addWidget(self.skills_container)
 
-    # --- Base sections for Job History and Education ---
+    # Base sections for Job History and Education
     def _create_job_history_section_base(self, parent_layout):
         job_history_lbl = QLabel("Job History:")
         job_history_lbl.setObjectName("section_header")
         parent_layout.addWidget(job_history_lbl)
 
         job_history_wrapper_layout, _ = self._create_section_wrapper(parent_layout)
-        self.job_history_section_layout = QVBoxLayout() # This will hold individual job entries
+        self.job_history_section_layout = QVBoxLayout()
         self.job_history_section_layout.setContentsMargins(0,0,0,0)
-        self.job_history_section_layout.setSpacing(10) # Spacing between job entries
+        self.job_history_section_layout.setSpacing(10)
         job_history_wrapper_layout.addLayout(self.job_history_section_layout)
 
     def _create_education_section_base(self, parent_layout):
@@ -202,12 +196,12 @@ class SummaryPage(QWidget):
         parent_layout.addWidget(education_lbl)
 
         education_wrapper_layout, _ = self._create_section_wrapper(parent_layout)
-        self.education_section_layout = QVBoxLayout() # This will hold individual education entries
+        self.education_section_layout = QVBoxLayout()
         self.education_section_layout.setContentsMargins(0,0,0,0)
-        self.education_section_layout.setSpacing(10) # Spacing between education entries
+        self.education_section_layout.setSpacing(10)
         education_wrapper_layout.addLayout(self.education_section_layout)
 
-    # --- Methods to add individual entries (called dynamically) ---
+    # Methods to add individual entries (called dynamically)
     def _add_job_history_entry(self, role: str, period: str, company: str, description: str):
         entry_widget = QWidget()
         entry_layout = QVBoxLayout(entry_widget)
@@ -222,7 +216,7 @@ class SummaryPage(QWidget):
         company_period_lbl.setObjectName("section_item_detail")
 
         role_company_period_layout.addWidget(role_lbl)
-        role_company_period_layout.addSpacing(5) # Spasi antara role dan company/period
+        role_company_period_layout.addSpacing(5)
         role_company_period_layout.addWidget(company_period_lbl)
         role_company_period_layout.addStretch(1)
         entry_layout.addLayout(role_company_period_layout)
@@ -283,7 +277,6 @@ class SummaryPage(QWidget):
                 if item.widget():
                     item.widget().deleteLater()
                 elif item.layout():
-                    # Clear nested layouts if any, though _add_job_history_entry adds widgets directly
                     self._clear_layout(item.layout())
         
     def _clear_education_entries(self):
@@ -293,7 +286,7 @@ class SummaryPage(QWidget):
                 if item.widget():
                     item.widget().deleteLater()
                 elif item.layout():
-                    self._clear_layout(item.layout()) # Just in case
+                    self._clear_layout(item.layout())
 
     def _clear_layout(self, layout):
         if layout is not None:
@@ -304,10 +297,7 @@ class SummaryPage(QWidget):
                 elif item.layout() is not None:
                     self._clear_layout(item.layout())
 
-
-    # ------------------------------------------------------------------
     # Public API
-    # ------------------------------------------------------------------
     def load_candidate(self, applicant_id: int, cv_path: str, cv_content: str):
 
         self.current_applicant_id = applicant_id
@@ -319,7 +309,6 @@ class SummaryPage(QWidget):
             self.birthdate_lbl.setText("Birthdate: -")
             self.address_lbl.setText("Address: -")
             self.phone_lbl.setText("Phone: -")
-            # Clear job history and education sections
             self._clear_job_history_entries()
             self._clear_education_entries()
             self._clear_skills()
@@ -342,19 +331,18 @@ class SummaryPage(QWidget):
 
         # Update skills
         self._clear_skills()
-        skills = candidate_data.get('skills', []) # Mengambil list of strings dari summary
+        skills = candidate_data.get('skills', [])
         if not skills:
-             skills = ["No Skills Found"] # Default jika kosong
+             skills = ["No Skills Found"]
         for skill in skills:
             skill_tag = self._create_skill_tag(skill)
             if skill_tag:
                 self.skills_layout.insertWidget(self.skills_layout.count() - 1, skill_tag)
 
         # Update Job History
-        self._clear_job_history_entries() # Bersihkan entri lama
-        job_history = candidate_data.get('job_history', []) # Mengambil list of dicts dari summary
+        self._clear_job_history_entries()
+        job_history = candidate_data.get('job_history', [])
         if not job_history:
-            # Tampilkan pesan jika tidak ada job history
             no_job_lbl = QLabel("No job history extracted.")
             no_job_lbl.setObjectName("description_text")
             self.job_history_section_layout.addWidget(no_job_lbl)
@@ -368,10 +356,9 @@ class SummaryPage(QWidget):
                 )
         
         # Update Education
-        self._clear_education_entries() # Bersihkan entri lama
-        education = candidate_data.get('education', []) # Mengambil list of dicts dari summary
+        self._clear_education_entries()
+        education = candidate_data.get('education', [])
         if not education:
-            # Tampilkan pesan jika tidak ada education
             no_edu_lbl = QLabel("No education extracted.")
             no_edu_lbl.setObjectName("description_text")
             self.education_section_layout.addWidget(no_edu_lbl)

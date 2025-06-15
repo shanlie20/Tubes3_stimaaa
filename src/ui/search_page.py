@@ -13,17 +13,13 @@ from PySide6.QtWidgets import (
     QScrollArea,
     QFrame,
     QGridLayout,
-    QSpacerItem,
     QSizePolicy
 )
 
-# Assume these imports are correct and available
 from src.core.search import perform_search
 from .components.keyword_input import KeywordInput
 from .components.result_card import ResultCard
 
-
-# --- Worker Thread untuk menjalankan perform_search ---
 class SearchWorker(QObject):
     finished = Signal(list, int, dict)
     error = Signal(str)
@@ -45,21 +41,18 @@ class SearchWorker(QObject):
         except Exception as e:
             self.error.emit(f"An error occurred during search: {str(e)}")
 
-# --- End Worker Thread ---
-
-
 class AlgorithmToggle(QWidget):
     """
     A custom toggle widget for selecting algorithms with a sliding animation.
     """
-    algorithm_selected = Signal(str) # Emits the text of the selected algorithm
+    algorithm_selected = Signal(str)
 
     def __init__(self, algorithms: list[str], parent=None):
         super().__init__(parent)
         self.algorithms = algorithms
-        self.current_index = -1 # No default selected algorithm initially
+        self.current_index = -1
 
-        self.setFixedHeight(40) # Fixed height for the toggle widget
+        self.setFixedHeight(40)
         self.setMinimumWidth(len(algorithms) * 120 + 40)
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
 
@@ -168,7 +161,7 @@ class AlgorithmToggle(QWidget):
 class SearchPage(QWidget):
     """Page that lets the recruiter search CVs by keyword."""
 
-    summary_requested = Signal(int, str, str)  # Emit applicant_id, cv_path, cv_content
+    summary_requested = Signal(int, str, str)
     view_cv_requested = Signal(str, str)
 
     def __init__(self) -> None:
@@ -187,26 +180,24 @@ class SearchPage(QWidget):
         self.search_thread = None
         self.search_worker = None
 
-    # ------------------------------------------------------------------
     # UI construction
-    # ------------------------------------------------------------------
     def _build_ui(self):
         root = QVBoxLayout(self)
         root.setAlignment(Qt.AlignmentFlag.AlignTop)
         root.setContentsMargins(24, 24, 24, 24)
         root.setSpacing(16)
 
-        # -- Title --
+        # Title
         title = QLabel("Applicant Tracking System - CV Search")
         title.setObjectName("h1")
         title.setAlignment(Qt.AlignmentFlag.AlignHCenter)
         root.addWidget(title)
 
-        # -- Keyword input --
+        # Keyword input
         self.keyword_input = KeywordInput(placeholder="Enter keywords, separated by commas...")
         root.addWidget(self.keyword_input)
 
-        # -- Algorithm selector (Animated Toggle) & Top-N selector --
+        # Algorithm selector (Animated Toggle) & Top-N selector
         algorithm_selection_layout = QHBoxLayout()
         algorithm_selection_layout.setContentsMargins(0, 2, 0, 2)
 
@@ -225,20 +216,20 @@ class SearchPage(QWidget):
         top_label = QLabel("Top matches:")
         self.top_spin = QSpinBox()
         self.top_spin.setRange(1, 480)
-        self.top_spin.setValue(10)
+        self.top_spin.setValue(8)
         algorithm_selection_layout.addWidget(top_label)
         algorithm_selection_layout.addWidget(self.top_spin)
 
         root.addLayout(algorithm_selection_layout)
 
-        # -- Search button --
+        # Search button
         self.search_btn = QPushButton("Search")
         self.search_btn.setDefault(True)
         self.search_btn.clicked.connect(self._on_search_clicked)
         root.addWidget(self.search_btn)
 
 
-        # -- Summary execution time and total CVs (moved here) --
+        # Summary execution time and total CVs
         info_layout = QHBoxLayout()
         self.exec_time_lbl = QLabel("")
         self.total_cv_lbl = QLabel("")
@@ -247,7 +238,7 @@ class SearchPage(QWidget):
         info_layout.addWidget(self.total_cv_lbl)
         root.addLayout(info_layout)
 
-        # --- White background frame for results ---
+        # White background frame for results
         self.results_background_frame = QFrame()
         self.results_background_frame.setObjectName("resultsBackgroundFrame")
         self.results_background_frame.setStyleSheet("""
@@ -261,7 +252,7 @@ class SearchPage(QWidget):
         self.results_frame_layout.setContentsMargins(15, 15, 15, 15)
         self.results_frame_layout.setSpacing(10)
 
-        # -- Results area (Scrollable) --
+        # Results area (Scrollable)
         self.results_scroll_area = QScrollArea()
         self.results_scroll_area.setWidgetResizable(True)
         self.results_container = QWidget()
@@ -272,7 +263,7 @@ class SearchPage(QWidget):
         
         self.results_frame_layout.addWidget(self.results_scroll_area)
 
-        # --- Loading Spinner (QProgressBar in indeterminate mode) and Text ---
+        # Loading Spinner (QProgressBar in indeterminate mode) and Text
         self.loading_spinner = QProgressBar()
         self.loading_spinner.setRange(0, 0)
         self.loading_spinner.setTextVisible(False)
@@ -288,7 +279,7 @@ class SearchPage(QWidget):
             }
         """)
         
-        self.loading_text_label = QLabel("Loading . . .") # New label for loading text
+        self.loading_text_label = QLabel("Loading . . .")
         self.loading_text_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.loading_text_label.setStyleSheet("font-size: 14pt; color: #555;")
 
@@ -298,11 +289,11 @@ class SearchPage(QWidget):
         spinner_center_layout.addWidget(self.loading_spinner)
         spinner_center_layout.addStretch(1)
         
-        self.loading_v_layout = QVBoxLayout() # Changed name for clarity
+        self.loading_v_layout = QVBoxLayout()
         self.loading_v_layout.addStretch(1)
         self.loading_v_layout.addLayout(spinner_center_layout)
-        self.loading_v_layout.addWidget(self.loading_text_label) # Add the loading text label
-        self.loading_v_layout.addSpacing(20) # Add some spacing below the text
+        self.loading_v_layout.addWidget(self.loading_text_label)
+        self.loading_v_layout.addSpacing(20)
         self.loading_v_layout.addStretch(1)
 
         self.loading_widget = QWidget()
@@ -316,7 +307,7 @@ class SearchPage(QWidget):
 
         root.addWidget(self.results_background_frame, 1)
 
-        # --- Pagination Controls ---
+        # Pagination Controls
         self.pagination_layout = QHBoxLayout()
         self.prev_button = QPushButton("Previous")
         self.prev_button.clicked.connect(self._prev_page)
@@ -334,7 +325,7 @@ class SearchPage(QWidget):
         self.pagination_layout.addStretch(1)
         root.addLayout(self.pagination_layout)
 
-        # Styling for the main page (h1)
+        # Styling for the main page
         self.setStyleSheet(
             """
             QLabel#h1 {
@@ -381,9 +372,7 @@ class SearchPage(QWidget):
         for i in range(self.results_grid_layout.columnCount()):
             self.results_grid_layout.setColumnStretch(i, 0)
 
-    # ------------------------------------------------------------------
     # Event handlers
-    # ------------------------------------------------------------------
     def _on_algorithm_selected(self, algorithm_name: str):
         """Receives the selected algorithm from the AlgorithmToggle widget."""
         self.selected_algorithm = algorithm_name
@@ -470,7 +459,7 @@ class SearchPage(QWidget):
         end_index = start_index + self.results_per_page
         current_page_results = self.all_results[start_index:end_index]
 
-        num_cols = 5
+        num_cols = 4
         min_rows_to_display = 2
 
         if not current_page_results and max(len(self.all_results), min_rows_to_display * num_cols) == 0:
@@ -495,7 +484,6 @@ class SearchPage(QWidget):
             for i in range(min_rows_to_display):
                 self.results_grid_layout.setRowStretch(i, 1)
             return
-
 
         row, col = 0, 0
         for i in range(max(len(current_page_results), min_rows_to_display * num_cols)):

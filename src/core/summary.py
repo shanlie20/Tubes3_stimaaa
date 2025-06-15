@@ -35,16 +35,10 @@ def get_candidate_summary(applicant_id: int, full_cv_path: str, cv_content: str 
                 "phone_number": decrypt(applicant_profile.phone_number),
                 "role": application_detail.application_role,
                 "skills": extracted_skills,
-                "job_history": extracted_job_history,   # langsung list of dicts dari hasil ekstraksi
-                "education": extracted_education,       # langsung list of dicts dari hasil ekstraksi
+                "job_history": extracted_job_history,
+                "education": extracted_education,
                 "cv_content": cv_content
             }
             return summary_data
         else:
             return {}
-
-# Contoh penggunaan:
-# applicant_id = 1
-# full_cv_path = "data/INFORMATION-TECHNOLOGY/15118506.pdf"
-# summary = get_candidate_summary(applicant_id, full_cv_path)
-# print(summary)

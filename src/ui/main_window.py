@@ -24,13 +24,10 @@ class MainWindow(QMainWindow):
         self._stack.addWidget(self.search_page)
         self._stack.addWidget(self.summary_page)
 
-        # --- wire signals ---
+        # Wire signals
         self.search_page.summary_requested.connect(self._show_summary_page)
         self.summary_page.back_requested.connect(self._show_search_page)
 
-    # ------------------------------------------------------------------
-    # Navigation helpers
-    # ------------------------------------------------------------------
     def _show_summary_page(self, applicant_id: int, cv_path: str, cv_content: str):
         """Navigate to the summary page and load data for the selected candidate."""
         self.summary_page.load_candidate(applicant_id, cv_path, cv_content)
