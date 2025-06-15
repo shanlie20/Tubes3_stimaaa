@@ -7,15 +7,19 @@ from src.utils.timer import start_timer, stop_timer
 from typing import List, Tuple, Dict
 
 from src.db.database import get_db_session
-from src.db.models import ApplicantProfile, ApplicationDetail # Pastikan model ini diimpor dengan benar
-from src.db.seeder import PROJECT_ROOT
+from src.db.models import ApplicantProfile, ApplicationDetail
 
 from .kmp import kmp_search
 from .boyer_moore import boyer_moore_search
 from .aho_corasick import aho_corasick_search
 from .levenshtein import fuzzy_search
+from .encryption import decrypt
 
 from src.core.pdf_parser import parse_pdf_to_text_and_extract_info
+
+
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 
 def normalize_text(text: str) -> str:
     normalized = ''.join([char.lower() if char.isalnum() else ' ' for char in text])
@@ -45,7 +49,7 @@ def perform_search(keywords_tuple: Tuple[str, ...], selected_algorithm: str, top
         for applicant_profile, application in all_applicants:
             cv_path = application.cv_path
             applicant_id = applicant_profile.applicant_id
-            full_name = f"{applicant_profile.first_name} {applicant_profile.last_name}".strip()
+            full_name = f"{decrypt(applicant_profile.first_name)} {decrypt(applicant_profile.last_name)}".strip()
 
             cv_content = application.cv_content
             
@@ -60,7 +64,7 @@ def perform_search(keywords_tuple: Tuple[str, ...], selected_algorithm: str, top
                not application.extracted_job_history_str or \
                not application.extracted_education_str:
                 
-                full_cv_path = os.path.join(PROJECT_ROOT, "data", cv_path)
+                full_cv_path = os.path.join(PROJECT_ROOT, cv_path)
                 if os.path.exists(full_cv_path):
                     try:
                         extracted_cv_data = parse_pdf_to_text_and_extract_info(full_cv_path)

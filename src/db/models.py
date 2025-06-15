@@ -6,19 +6,19 @@ from datetime import datetime
 Base = declarative_base()
 
 class ApplicantProfile(Base):
-    __tablename__ = 'applicant_profiles'
+    __tablename__ = 'ApplicantProfile'
     applicant_id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    first_name: Mapped[str] = mapped_column(String(100), nullable=False)
-    last_name: Mapped[str | None] = mapped_column(String(100))
-    date_of_birth: Mapped[Date | None] = mapped_column(Date)
-    address: Mapped[str | None] = mapped_column(String(255))
-    phone_number: Mapped[str | None] = mapped_column(String(50))
+    first_name: Mapped[str] = mapped_column(String(500), nullable=False)
+    last_name: Mapped[str | None] = mapped_column(String(500))
+    date_of_birth: Mapped[str | None] = mapped_column(String(255))
+    address: Mapped[str | None] = mapped_column(String(2550))
+    phone_number: Mapped[str | None] = mapped_column(String(500))
     # Hapus email jika tidak diperlukan
     # email: Mapped[str | None] = mapped_column(String(255))
 
 class ApplicationDetail(Base):
-    __tablename__ = 'application_details'
-    application_id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    __tablename__ = 'ApplicationDetail'
+    detail_id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     applicant_id: Mapped[int] = mapped_column(Integer, unique=True, nullable=False)
     application_role: Mapped[str | None] = mapped_column(String(100))
     cv_path: Mapped[str] = mapped_column(String(255), nullable=False)

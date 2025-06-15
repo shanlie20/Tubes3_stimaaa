@@ -1,7 +1,6 @@
 from src.db.database import get_db_session
 from src.db.models import ApplicantProfile, ApplicationDetail
-# import json # Pastikan ini tidak diimpor jika Anda tidak memakainya
-
+from .encryption import decrypt 
 
 def get_candidate_summary(applicant_id: int) -> dict:
     """
@@ -49,11 +48,11 @@ def get_candidate_summary(applicant_id: int) -> dict:
 
             summary_data = {
                 "applicant_id": applicant_profile.applicant_id,
-                "first_name": applicant_profile.first_name,
-                "last_name": applicant_profile.last_name,
-                "date_of_birth": applicant_profile.date_of_birth,
-                "address": applicant_profile.address,
-                "phone_number": applicant_profile.phone_number,
+                "first_name": decrypt(applicant_profile.first_name),
+                "last_name": decrypt(applicant_profile.last_name),
+                "date_of_birth": decrypt(applicant_profile.date_of_birth),
+                "address": decrypt(applicant_profile.address),
+                "phone_number": decrypt(applicant_profile.phone_number),
                 "role": application_detail.application_role,
                 "skills": skills_list,
                 "job_history": job_history_parsed, # Sekarang list of dicts
