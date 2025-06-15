@@ -13,19 +13,17 @@ class ApplicantProfile(Base):
     date_of_birth: Mapped[str | None] = mapped_column(String(255))
     address: Mapped[str | None] = mapped_column(String(2550))
     phone_number: Mapped[str | None] = mapped_column(String(500))
-    # Hapus email jika tidak diperlukan
-    # email: Mapped[str | None] = mapped_column(String(255))
 
 class ApplicationDetail(Base):
     __tablename__ = 'ApplicationDetail'
     detail_id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     applicant_id: Mapped[int] = mapped_column(Integer, unique=True, nullable=False)
     application_role: Mapped[str | None] = mapped_column(String(100))
-    cv_path: Mapped[str] = mapped_column(String(255), nullable=False)
-    cv_content: Mapped[str | None] = mapped_column(Text)
-
-    # --- KOLOM BARU DENGAN TIPE STRING/TEXT BIASA (TANPA JSON) ---
-    extracted_skills_str: Mapped[str | None] = mapped_column(Text) # String dipisahkan koma
-    extracted_job_history_str: Mapped[str | None] = mapped_column(Text) # Simpan sebagai string yang diformat
-    extracted_education_str: Mapped[str | None] = mapped_column(Text) # Simpan sebagai string yang diformat
-    # --- END KOLOM BARU ---
+    # Tipe data diubah ke Text agar sesuai dengan SQL file
+    cv_path: Mapped[str] = mapped_column(Text, nullable=False) 
+    
+    # --- SEMUA KOLOM CACHING DIHAPUS DARI MODEL INI ---
+    # cv_content: Mapped[str | None] = mapped_column(Text)
+    # extracted_skills_str: Mapped[str | None] = mapped_column(Text)
+    # extracted_job_history_str: Mapped[str | None] = mapped_column(Text)
+    # extracted_education_str: Mapped[str | None] = mapped_column(Text)

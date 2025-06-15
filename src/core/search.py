@@ -29,126 +29,47 @@ def normalize_text(text: str) -> str:
 def perform_search(keywords_tuple: Tuple[str, ...], selected_algorithm: str, top_n: int) -> Tuple[List[Dict], int, Dict]:
     results = []
     timings = {"exact_ms": 0.0, "fuzzy_ms": 0.0}
-    total_cv_scan = 0
-
+    
     normalized_keywords_input = [normalize_text(keyword) for keyword in keywords_tuple]
 
     with get_db_session() as db:
-        # --- PERBAIKAN KUERI JOIN DI SINI ---
-        # Memberikan kondisi join yang eksplisit
         applicants_query = db.query(ApplicantProfile, ApplicationDetail).join(
             ApplicationDetail, ApplicantProfile.applicant_id == ApplicationDetail.applicant_id
         )
-        # --- AKHIR PERBAIKAN ---
-
         all_applicants = applicants_query.all()
         total_cv_scan = len(all_applicants)
-
         applicant_matches = []
 
         for applicant_profile, application in all_applicants:
             cv_path = application.cv_path
             applicant_id = applicant_profile.applicant_id
+            
+            # Panggil decrypt() tetap ada sesuai permintaan Anda
             full_name = f"{decrypt(applicant_profile.first_name)} {decrypt(applicant_profile.last_name)}".strip()
 
-            cv_content = application.cv_content
-            
+            # --- LOGIKA DIUBAH: SELALU PARSING, TIDAK ADA CACHING ---
+            cv_content = ""
             extracted_skills = []
             extracted_job_history = []
             extracted_education = []
 
-            # Periksa apakah konten CV dan kolom ekstraksi sudah ada di DB
-            # (Diasumsikan extracted_skills_str, _job_history_str, _education_str sudah ada di model ApplicationDetail)
-            if not application.cv_content or \
-               not application.extracted_skills_str or \
-               not application.extracted_job_history_str or \
-               not application.extracted_education_str:
-                
-                full_cv_path = os.path.join(PROJECT_ROOT, cv_path)
-                if os.path.exists(full_cv_path):
-                    try:
-                        extracted_cv_data = parse_pdf_to_text_and_extract_info(full_cv_path)
-                        cv_content = extracted_cv_data["full_text_normalized"]
-
-                        application.cv_content = extracted_cv_data["full_text_normalized"]
-                        
-                        # Simpan skills sebagai string yang dipisahkan koma
-                        application.extracted_skills_str = ", ".join(extracted_cv_data.get("skills", []))
-                        
-                        # Simpan job_history sebagai string yang diformat
-                        formatted_job_history = []
-                        for job in extracted_cv_data.get("job_history", []):
-                            role = job.get("role", "")
-                            period = job.get("period", "")
-                            company = job.get("company", "")
-                            description = job.get("description", "") # Ambil deskripsi
-                            if role or period or company or description: # Cek apakah ada konten
-                                # Format sesuai dengan bagaimana Anda ingin menampilkannya di SummaryPage
-                                # Saya akan menggunakan format ini untuk nanti dipecah di SummaryPage
-                                formatted_job_history.append(
-                                    f"ROLE: {role}|PERIOD: {period}|COMPANY: {company}|DESC: {description.replace('\n', ' ')}"
-                                )
-                        application.extracted_job_history_str = "||".join(formatted_job_history) # Gunakan pemisah yang jelas
-
-                        # Simpan education sebagai string yang diformat
-                        formatted_education = []
-                        for edu in extracted_cv_data.get("education", []):
-                            major_field = edu.get("major_field", "")
-                            institution = edu.get("institution", "")
-                            period = edu.get("period", "")
-                            if major_field or institution or period:
-                                # Format sesuai dengan bagaimana Anda ingin menampilkannya di SummaryPage
-                                formatted_education.append(
-                                    f"MAJOR: {major_field}|INST: {institution}|PERIOD: {period}"
-                                )
-                        application.extracted_education_str = "||".join(formatted_education) # Gunakan pemisah yang jelas
-                        
-                        # Simpan data yang diekstrak untuk penggunaan di bawah
-                        extracted_skills = extracted_cv_data.get("skills", [])
-                        extracted_job_history = extracted_cv_data.get("job_history", []) # Tetap dict untuk passed to UI
-                        extracted_education = extracted_cv_data.get("education", []) # Tetap dict untuk passed to UI
-
-                    except Exception as e:
-                        print(f"Error parsing PDF and extracting info from '{full_cv_path}': {e}")
-                        cv_content = ""
-                else:
-                    print(f"File {cv_path} not found at {full_cv_path}.")
+            full_cv_path = os.path.join(PROJECT_ROOT, cv_path)
+            if os.path.exists(full_cv_path):
+                try:
+                    # Parsing dan ekstraksi info dilakukan setiap saat
+                    extracted_cv_data = parse_pdf_to_text_and_extract_info(full_cv_path)
+                    cv_content = extracted_cv_data["full_text_normalized"]
+                    extracted_skills = extracted_cv_data.get("skills", [])
+                    extracted_job_history = extracted_cv_data.get("job_history", [])
+                    extracted_education = extracted_cv_data.get("education", [])
+                except Exception as e:
+                    print(f"Error parsing PDF '{full_cv_path}': {e}")
+                    continue # Lanjut ke CV berikutnya jika parsing gagal
             else:
-                # Jika sudah ada di DB, ambil dari DB
-                extracted_skills = application.extracted_skills_str.split(', ') if application.extracted_skills_str else []
-                
-                # --- PARSE KEMBALI STRING KE LIST OF DICTS UNTUK UI (seperti sebelumnya) ---
-                # Untuk Job History
-                extracted_job_history = []
-                if application.extracted_job_history_str:
-                    for entry_str in application.extracted_job_history_str.split("||"):
-                        parts = entry_str.split("|")
-                        job_dict = {}
-                        for part in parts:
-                            if ":" in part:
-                                key, value = part.split(":", 1)
-                                job_dict[key.strip().lower()] = value.strip()
-                        if job_dict:
-                            extracted_job_history.append(job_dict)
+                print(f"File CV tidak ditemukan di '{full_cv_path}'.")
+                continue # Lanjut ke CV berikutnya
 
-                # Untuk Education
-                extracted_education = []
-                if application.extracted_education_str:
-                    for entry_str in application.extracted_education_str.split("||"):
-                        parts = entry_str.split("|")
-                        edu_dict = {}
-                        for part in parts:
-                            if ":" in part:
-                                key, value = part.split(":", 1)
-                                edu_dict[key.strip().lower()] = value.strip()
-                        if edu_dict:
-                            extracted_education.append(edu_dict)
-                # --- AKHIR PARSING KEMBALI ---
-
-
-            if not cv_content:
-                continue
-
+            # Lakukan pencarian pada cv_content yang baru saja di-parsing
             normalized_cv_content = normalize_text(cv_content)
 
             current_applicant_total_matches = 0
@@ -199,17 +120,16 @@ def perform_search(keywords_tuple: Tuple[str, ...], selected_algorithm: str, top
                     "total_matches": current_applicant_total_matches,
                     "applicant_id": applicant_id,
                     "cv_path": full_cv_path,
-                    "cv_content": cv_content,
+                    "cv_content": cv_content, 
                     "skills": extracted_skills,
-                    "job_history": extracted_job_history, # Dikembalikan ke list of dicts
-                    "education": extracted_education # Dikembalikan ke list of dicts
+                    "job_history": extracted_job_history,
+                    "education": extracted_education
                 })
-        
-        try:
-            db.commit()
-        except Exception as e:
-            db.rollback()
-            print(f"Error committing updated CV content/extracted info to database: {e}")
+        # try:
+        #     db.commit()
+        # except Exception as e:
+        #     db.rollback()
+        #     print(f"Error committing updated CV content/extracted info to database: {e}")
 
     applicant_matches.sort(key=lambda x: x["total_matches"], reverse=True)
     results = applicant_matches[:top_n]

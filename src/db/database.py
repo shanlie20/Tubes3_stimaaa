@@ -1,10 +1,10 @@
 import os
-import re
 from contextlib import contextmanager
 from sqlalchemy import create_engine, text, text, exc
 from sqlalchemy.orm import sessionmaker, Session
 from dotenv import load_dotenv
 
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 load_dotenv()
 DB_USER = os.getenv("DB_USER")
 DB_PASSWORD = os.getenv("DB_PASSWORD")
@@ -88,6 +88,5 @@ def setup_database_from_sql(sql_file_path: str, drop_db_if_exists: bool = True):
         db_engine.dispose()
 
 if __name__ == "__main__":
-    PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     sql_file = os.path.join(PROJECT_ROOT, "src", "db", "tubes3_seeding.sql")
     setup_database_from_sql(sql_file)
