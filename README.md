@@ -30,6 +30,7 @@ pip install pdfplumber
 pip install faker
 pip install sqlalchemy mysql-connector-python python-dotenv
 pip install PySide6
+pip install sympy
 ```
 
 ## How to run
