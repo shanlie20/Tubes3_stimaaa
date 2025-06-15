@@ -168,7 +168,7 @@ class AlgorithmToggle(QWidget):
 class SearchPage(QWidget):
     """Page that lets the recruiter search CVs by keyword."""
 
-    summary_requested = Signal(int)
+    summary_requested = Signal(int, str, str)  # Emit applicant_id, cv_path, cv_content
     view_cv_requested = Signal(str, str)
 
     def __init__(self) -> None:

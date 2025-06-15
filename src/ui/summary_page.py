@@ -308,11 +308,12 @@ class SummaryPage(QWidget):
     # ------------------------------------------------------------------
     # Public API
     # ------------------------------------------------------------------
-    def load_candidate(self, applicant_id: int):
+    def load_candidate(self, applicant_id: int, cv_path: str, cv_content: str):
+
         self.current_applicant_id = applicant_id
 
-        candidate_data = get_candidate_summary(applicant_id)
-
+        candidate_data = get_candidate_summary(applicant_id, cv_path, cv_content)
+        print(f"Loading candidate data for ID {applicant_id}: {candidate_data}")
         if not candidate_data:
             self.name_lbl.setText("Candidate Not Found")
             self.birthdate_lbl.setText("Birthdate: -")

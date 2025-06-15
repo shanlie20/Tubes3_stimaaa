@@ -12,7 +12,7 @@ class ResultCard(QFrame):
     """Card widget showing basic information about a CV match."""
 
     # MODIFIED: Change signal to emit only int (applicant_id)
-    summary_clicked = Signal(int) # Emits the applicant_id for summary
+    summary_clicked = Signal(int, str, str) # Emits the applicant_id for summary
     view_cv_clicked = Signal(str) # Emits the cv_path string for viewing CV
 
     def __init__(self, data: dict):
@@ -62,7 +62,11 @@ class ResultCard(QFrame):
         bottom_h_layout = QHBoxLayout()
         summary_btn = QPushButton("Summary")
         # MODIFIED: Emit only applicant_id
-        summary_btn.clicked.connect(lambda: self.summary_clicked.emit(self._data.get("applicant_id")))
+        summary_btn.clicked.connect(lambda: self.summary_clicked.emit(
+            self._data.get("applicant_id"),
+            self._data.get("cv_path", ""),
+            self._data.get("cv_content", "")
+        ))
         bottom_h_layout.addWidget(summary_btn)
 
         bottom_h_layout.addStretch(1) # Pushes View CV button to the right

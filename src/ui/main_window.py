@@ -31,9 +31,9 @@ class MainWindow(QMainWindow):
     # ------------------------------------------------------------------
     # Navigation helpers
     # ------------------------------------------------------------------
-    def _show_summary_page(self, candidate_data: dict):
+    def _show_summary_page(self, applicant_id: int, cv_path: str, cv_content: str):
         """Navigate to the summary page and load data for the selected candidate."""
-        self.summary_page.load_candidate(candidate_data)
+        self.summary_page.load_candidate(applicant_id, cv_path, cv_content)
         self._stack.setCurrentWidget(self.summary_page)
 
     def _show_search_page(self):
