@@ -1,4 +1,5 @@
 from PySide6.QtCore import Signal, Qt
+from PySide6.QtGui import QPalette
 from PySide6.QtWidgets import (
     QWidget,
     QVBoxLayout,
@@ -8,7 +9,8 @@ from PySide6.QtWidgets import (
     QFrame,
     QScrollArea,
     QSizePolicy,
-    QGridLayout # Perlu ini lagi untuk layout job/edu detail
+    QGridLayout, # Perlu ini lagi untuk layout job/edu detail
+    QApplication
 )
 from src.core.summary import get_candidate_summary
 
@@ -19,6 +21,9 @@ class SummaryPage(QWidget):
 
     def __init__(self):
         super().__init__()
+        app_palette = QApplication.instance().palette()
+        window_color = app_palette.color(QPalette.ColorRole.Window)
+        theme_name = "dark" if window_color.lightness() < 128 else "light"
         self._build_ui()
         self.current_applicant_id = None
 
@@ -34,17 +39,14 @@ class SummaryPage(QWidget):
             QLabel#h1 {
                 font-size: 20pt;
                 font-weight: bold;
-                color: black;
             }
             QLabel#h2 {
                 font-size: 16pt;
                 font-weight: bold;
-                color: black;
             }
             QLabel#section_header {
                 font-size: 14pt;
                 font-weight: bold;
-                color: black;
                 margin-top: 15px;
             }
             QPushButton {
@@ -79,6 +81,18 @@ class SummaryPage(QWidget):
                 padding: 4px 8px;
                 border-radius: 5px;
                 font-size: 10pt;
+            }
+            /* -- Untuk Light Theme -- */
+            SummaryPage[theme="light"] QLabel#h1,
+            SummaryPage[theme="light"] QLabel#h2,
+            SummaryPage[theme="light"] QLabel#section_header {
+                color: black;
+            }
+            /* -- Untuk Dark Theme -- */
+            SummaryPage[theme="dark"] QLabel#h1,
+            SummaryPage[theme="dark"] QLabel#h2,
+            SummaryPage[theme="dark"] QLabel#section_header {
+                color: white;
             }
             QLabel.description_text {
                 font-size: 10pt;
