@@ -92,7 +92,8 @@ Aplikasi ATS akan terbuka dengan antarmuka grafisnya.
 │   ├── AGRICULTURE/
 │   ├── ... (dan kategori profesi lainnya)
 ├── doc/                 # Dokumentasi tambahan atau aset proyek
-│   └── creators.jpg
+│   ├── creators.jpg
+│   └── stimaaa.pdf
 └── src/                 # Kode sumber aplikasi utama
     ├── core/            # Implementasi inti algoritma pencarian dan pemrosesan teks
     │   ├── aho_corasick.py   # Algoritma Aho-Corasick untuk pencarian string
