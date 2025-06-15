@@ -51,7 +51,7 @@ b. SQLTools MySQL/MariaDB/TiDB Driver oleh Matheus Teixeira Konfigurasikan konek
 2. Isi Data (Seeding)
 Setelah database terkonfigurasi, jalankan skrip seeder untuk mengisi data awal ke database Anda. Anda tidak perlu membuat database ats_db secara manual jika skrip seeder akan melakukannya (meskipun langkah membuat database secara manual di atas tetap disarankan untuk memastikan hak akses).
 ```
-python -m src.db.seeder
+python -m src.db.database
 python -m src.db.encryption
 ```
 3. Jalankan Aplikasi
