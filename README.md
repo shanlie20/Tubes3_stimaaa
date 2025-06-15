@@ -41,7 +41,8 @@ Ikuti langkah-langkah di bawah ini untuk menyiapkan dan menjalankan aplikasi ATS
 ```
 DB_USER=root #biasanya (sesuaikan dengan user database Anda)
 DB_PASSWORD=your_password #ganti dengan password database Anda
-DB_HOST=localhost #biasanya (sesuaikan dengan host database Anda) DB_PORT=3306 #default (sesuaikan dengan port database Anda)
+DB_HOST=localhost #biasanya (sesuaikan dengan host database Anda) 
+DB_PORT=3306 #default (sesuaikan dengan port database Anda)
 DB_NAME=ats_db #jangan diubah, ini adalah nama database yang akan digunakan oleh aplikasi
 ```
 - Ekstensi VS Code (Opsional): Untuk pengelolaan database yang lebih mudah, Anda dapat menginstal ekstensi VS Code berikut: <br>
@@ -51,6 +52,7 @@ b. SQLTools MySQL/MariaDB/TiDB Driver oleh Matheus Teixeira Konfigurasikan konek
 Setelah database terkonfigurasi, jalankan skrip seeder untuk mengisi data awal ke database Anda. Anda tidak perlu membuat database ats_db secara manual jika skrip seeder akan melakukannya (meskipun langkah membuat database secara manual di atas tetap disarankan untuk memastikan hak akses).
 ```
 python -m src.db.seeder
+python -m src.db.encryption
 ```
 3. Jalankan Aplikasi
 Setelah database terisi, Anda dapat menjalankan aplikasi utama:
@@ -90,4 +92,81 @@ Aplikasi ATS akan terbuka dengan antarmuka grafisnya.
 ## Struktur Program
 ```
 
+tolong rapikan tree berikut
+
+.
+
+├── MySQLCV.session.sql  # Skrip sesi database MySQL
+
+├── README.md            # Dokumentasi utama proyek
+
+├── data/                # Berisi kumpulan data CV (berkas PDF) yang dikategorikan berdasarkan profesi
+
+│   ├── ACCOUNTANT/
+
+│   ├── ADVOCATE/
+
+│   ├── AGRICULTURE/
+
+│   ├── ... (dan kategori profesi lainnya)
+
+├── doc/                 # Dokumentasi tambahan atau aset proyek
+
+│   └── creators.jpg
+
+└── src/                 # Kode sumber aplikasi utama
+
+    ├── core/            # Implementasi inti algoritma pencarian dan pemrosesan teks
+
+    │   ├── aho_corasick.py   # Algoritma Aho-Corasick untuk pencarian string
+
+    │   ├── boyer_moore.py    # Algoritma Boyer-Moore untuk pencarian string
+
+    │   ├── encryption.py     # Logika enkripsi (mungkin untuk data atau kredensial)
+
+    │   ├── kmp.py            # Algoritma Knuth-Morris-Pratt (KMP) untuk pencarian string
+
+    │   ├── levenshtein.py    # Algoritma Levenshtein untuk perhitungan jarak edit (kesamaan string)
+
+    │   ├── pdf_parser.py     # Modul untuk mengekstrak teks dari berkas PDF
+
+    │   ├── search.py         # Logika utama untuk melakukan pencarian CV
+
+    │   └── summary.py        # Logika untuk membuat ringkasan CV
+
+    ├── db/              # Modul untuk interaksi dengan database
+
+    │   ├── ats.sql           # Skema database untuk Applicant Tracking System
+
+    │   ├── database.py       # Koneksi dan operasi database
+
+    │   ├── encryption.py     # (Kemungkinan) Enkripsi terkait database
+
+    │   ├── models.py         # Definisi model data untuk ORM/mapping database
+
+    │   └── tubes3_seeding.sql# Skrip untuk mengisi database dengan data awal (seeding)
+
+    ├── main.py          # Titik masuk utama aplikasi (main entry point)
+
+    ├── ui/              # Antarmuka Pengguna (User Interface) aplikasi
+
+    │   ├── components/       # Komponen UI yang dapat digunakan kembali
+
+    │   │   ├── keyword_input.py # Komponen input kata kunci
+
+    │   │   └── result_card.py   # Komponen untuk menampilkan hasil pencarian
+
+    │   ├── main_window.py    # Jendela utama aplikasi
+
+    │   ├── search_page.py    # Halaman/view untuk fungsi pencarian CV
+
+    │   └── summary_page.py   # Halaman/view untuk menampilkan ringkasan CV
+
+    └── utils/           # Utility functions (fungsi pembantu umum)
+
+        ├── file_utils.py     # Utilitas terkait operasi berkas
+
+        ├── keyword_utils.py  # Utilitas terkait pemrosesan kata kunci
+
+        └── timer.py          # Utilitas untuk pengukuran waktu (mis. kinerja pencarian)
 ```
